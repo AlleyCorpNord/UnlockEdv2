@@ -6,7 +6,6 @@ import { useToast } from '@/Context/ToastCtx';
 import { ConnectCanvasModal, showModal } from '@/Components/modals';
 import { AddButton } from '@/Components/inputs';
 import CanvasConnectionCard from '@/Components/Canvas/CanvasConnectionCard';
-import CanvasOAuthConfigForm from '@/Components/Canvas/CanvasOAuthConfigForm';
 import {
     CanvasConnection,
     ToastState,
@@ -159,10 +158,6 @@ export default function CanvasIntegration() {
                 </table>
             )}
 
-            <div className="mt-8 mb-8">
-                <CanvasOAuthConfigForm />
-            </div>
-
             <div className="grid grid-cols-2 gap-8 mt-8">
                 <div>
                     <h3 className="text-lg font-semibold mb-4">
@@ -185,7 +180,9 @@ export default function CanvasIntegration() {
                             </ul>
                         </li>
                         <li>Copy the Client ID and Client Secret</li>
-                        <li>Enter them in the configuration form above</li>
+                        <li>
+                            Enter them when you click "Connect Canvas Instance"
+                        </li>
                     </ol>
                 </div>
 
@@ -195,6 +192,10 @@ export default function CanvasIntegration() {
                     </h3>
                     <ol className="list-decimal list-inside space-y-2 text-sm">
                         <li>Click "Connect Canvas Instance" above</li>
+                        <li>
+                            Enter your Canvas Client ID and Client Secret (from
+                            Canvas Settings → Developer Keys)
+                        </li>
                         <li>
                             Enter your Canvas instance URL (e.g.,
                             https://your-institution.instructure.com)

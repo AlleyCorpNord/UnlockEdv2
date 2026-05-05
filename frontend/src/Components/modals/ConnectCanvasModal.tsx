@@ -28,13 +28,29 @@ export const ConnectCanvasModal = forwardRef(function (
         }
 
         try {
-            const response = await API.post<CanvasAuthResponse>(
+            // First, save Canvas OAuth config
+            const configResponse = (await API.post('canvas/config', {
+                client_id: data.client_id,
+                client_secret: data.client_secret
+            })) as ServerResponseOne<unknown>;
+
+            if (!configResponse.success) {
+                checkResponse(
+                    false,
+                    configResponse.message ||
+                        'Failed to save Canvas credentials'
+                );
+                return;
+            }
+
+            // Then initiate Canvas connection
+            const response = (await API.post<CanvasAuthResponse>(
                 'canvas/connect',
                 {
                     facility_id: user.facility.id.toString(),
                     canvas_url: data.canvas_url
                 }
-            ) as ServerResponseOne<CanvasAuthResponse>;
+            )) as ServerResponseOne<CanvasAuthResponse>;
 
             if (response.success && response.data?.auth_url) {
                 // Redirect to Canvas OAuth flow
@@ -58,6 +74,20 @@ export const ConnectCanvasModal = forwardRef(function (
         <FormModal
             title="Connect Canvas Instance"
             inputs={[
+                {
+                    type: FormInputTypes.Text,
+                    label: 'Canvas Client ID',
+                    interfaceRef: 'client_id',
+                    required: true,
+                    placeholder: 'Your Canvas OAuth Client ID'
+                },
+                {
+                    type: FormInputTypes.Text,
+                    label: 'Canvas Client Secret',
+                    interfaceRef: 'client_secret',
+                    required: true,
+                    placeholder: 'Your Canvas OAuth Client Secret'
+                },
                 {
                     type: FormInputTypes.Text,
                     label: 'Canvas URL',
