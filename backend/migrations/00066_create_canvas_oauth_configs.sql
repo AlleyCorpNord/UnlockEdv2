@@ -1,5 +1,6 @@
--- Create canvas_oauth_configs table
-CREATE TABLE IF NOT EXISTS canvas_oauth_configs (
+-- +goose Up
+-- +goose StatementBegin
+CREATE TABLE canvas_oauth_configs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     facility_id INTEGER NOT NULL UNIQUE,
     client_id TEXT NOT NULL,
@@ -11,3 +12,10 @@ CREATE TABLE IF NOT EXISTS canvas_oauth_configs (
 );
 
 CREATE INDEX idx_canvas_oauth_configs_facility_id ON canvas_oauth_configs(facility_id);
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP INDEX IF EXISTS idx_canvas_oauth_configs_facility_id;
+DROP TABLE IF EXISTS canvas_oauth_configs;
+-- +goose StatementEnd
