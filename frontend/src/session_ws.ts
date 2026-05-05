@@ -101,7 +101,7 @@ export class WebsocketSession {
     }
 
     public notifyOpenContentActivity(cleanup?: boolean): void {
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        if (this.socket?.readyState === WebSocket.OPEN) {
             const msg: WsMsg = {
                 event_type: WsEventType.VisitEvent,
                 msg: {
@@ -122,7 +122,7 @@ export class WebsocketSession {
 
     // public API to send messages to the backend.
     public sendMessage(msg: WsMsg): void {
-        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        if (this.socket?.readyState === WebSocket.OPEN) {
             this.socket.send(JSON.stringify(msg));
         } else {
             console.warn('WebSocket is not open. Message not sent:');
@@ -174,7 +174,7 @@ export class WebsocketSession {
         } catch (error) {
             console.error('Error parsing WebSocket message:', error);
         }
-        return {} as Partial<WsMsg>;
+        return {};
     }
 }
 

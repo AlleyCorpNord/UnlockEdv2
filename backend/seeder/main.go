@@ -672,15 +672,17 @@ func createFacilityPrograms(db *gorm.DB) ([]models.ProgramClass, error) {
 					log.Printf("Failed to create rrule: %v", err)
 				}
 				rooms := facilityRooms[facilities[idx].ID]
-				roomID := rooms[rand.Intn(len(rooms))].ID
-				event := models.ProgramClassEvent{
-					ClassID:        class.ID,
-					RecurrenceRule: rule.String(),
-					RoomID:         &roomID,
-					Duration:       "1h0m0s",
-				}
-				if err := db.Create(&event).Error; err != nil {
-					log.Printf("Failed to create event: %v", err)
+				if len(rooms) > 0 {
+					roomID := rooms[rand.Intn(len(rooms))].ID
+					event := models.ProgramClassEvent{
+						ClassID:        class.ID,
+						RecurrenceRule: rule.String(),
+						RoomID:         &roomID,
+						Duration:       "1h0m0s",
+					}
+					if err := db.Create(&event).Error; err != nil {
+						log.Printf("Failed to create event: %v", err)
+					}
 				}
 			}
 		}

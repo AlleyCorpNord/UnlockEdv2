@@ -174,6 +174,9 @@ export const registerProviderInputs: Input[] = [
 
 export { RegisterOIDCClientModal } from './RegisterOIDCClientModal';
 
+// Canvas Exports
+export { ConnectCanvasModal } from './ConnectCanvasModal';
+
 // Helpful Links Exports
 export const linkInputs: Input[] = [
     {

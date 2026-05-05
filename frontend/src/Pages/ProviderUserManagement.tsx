@@ -167,7 +167,7 @@ export default function ProviderUserManagement() {
         void getData();
     }, [providerId]);
 
-    if (provider && provider.type === ProviderPlatformType.KOLIBRI) {
+    if (provider?.type === ProviderPlatformType.KOLIBRI) {
         return <div>Kolibri users are managed automatically</div>;
     }
     return (
@@ -282,7 +282,7 @@ export default function ProviderUserManagement() {
                         Failed to load users.
                     </span>
                 )}
-                {!isLoading && !error && data && data.meta.total === 0 && (
+                {!isLoading && !error && data?.meta.total === 0 && (
                     <span className="text-center text-warning">No results</span>
                 )}
             </div>

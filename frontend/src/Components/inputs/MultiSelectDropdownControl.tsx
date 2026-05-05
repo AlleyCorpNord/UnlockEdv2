@@ -44,7 +44,7 @@ export function MultiSelectDropdown({
         return label;
     };
     const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
-        if (!dropdownRef.current?.contains(event.relatedTarget as Node)) {
+        if (!dropdownRef.current?.contains(event.relatedTarget)) {
             onBlurSearch();
             setIsOpen(false);
         }

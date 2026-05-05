@@ -70,6 +70,50 @@ If this does not work because your directory is named something different, you c
 
 **Integrations:**
 
+- _Canvas LMS_:
+  If you wish to run and develop Canvas integrations locally:
+  
+  1. Start Canvas and Redis:
+     ```bash
+     docker-compose up redis canvas
+     ```
+     **Note:** Canvas builds from source on first run, which takes several minutes. Subsequent starts are faster.
+
+  2. Initialize the Canvas database with migrations (run this once after containers are healthy):
+     ```bash
+     docker-compose exec canvas bundle exec rake db:create db:migrate
+     ```
+
+  3. Access Canvas at `http://127.0.0.1:3000` and complete the setup wizard.
+
+  4. Set up Canvas OAuth2 for UnlockEd integration:
+     - In Canvas (as admin): Settings → Developer Keys → Create New Key
+     - Application name: "UnlockEd"
+     - Redirect URI: `http://127.0.0.1/api/canvas/oauth/callback`
+     - Copy the Client ID and Client Secret
+     - Add to `.env`:
+       ```bash
+       CANVAS_OAUTH_CLIENT_ID=<client_id>
+       CANVAS_OAUTH_CLIENT_SECRET=<client_secret>
+       CANVAS_OAUTH_REDIRECT_URI=http://127.0.0.1/api/canvas/oauth/callback
+       ```
+
+  5. Canvas OAuth flow - Prison admins can now:
+     - Click "Connect Canvas" in UnlockEd admin panel
+     - Authenticate with their Canvas instance
+     - Grant UnlockEd permission to access their Canvas data
+     - Each facility's Canvas instance is securely connected and managed independently
+
+  6. UnlockEd will automatically:
+     - Exchange OAuth codes for access tokens
+     - Encrypt and store tokens securely in the database
+     - Manage token expiration and refresh
+     - Allow syncing courses, users, assignments, and enrollments from Canvas
+
+  For development, the Canvas database schema is shared with UnlockEd via the same PostgreSQL instance (database: `canvas`).
+  
+  For Canvas API documentation, see: [Canvas REST API](https://canvas.instructure.com/doc/api/)
+
 - _Kolibri_:
   If you wish to run + develop against `Kolibri` locally:
   first, you need to build and tag the docker image

@@ -501,6 +501,12 @@ export interface ProviderPlatform {
         | ProviderPlatformType;
 }
 
+export interface CanvasConnection {
+    id: string;
+    canvas_url: string;
+    created_at: string;
+}
+
 export enum ProviderPlatformState {
     ENABLED = 'enabled',
     DISABLED = 'disabled',
@@ -524,6 +530,7 @@ export enum ClassMgmtTabs {
 export enum ProviderPlatformType {
     CANVAS_CLOUD = 'canvas_cloud',
     CANVAS_OSS = 'canvas_oss',
+    CANVAS_OAUTH = 'canvas_oauth',
     KOLIBRI = 'kolibri',
     BRIGHTSPACE = 'brightspace'
 }

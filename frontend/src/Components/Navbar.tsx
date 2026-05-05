@@ -19,7 +19,8 @@ import {
     LightBulbIcon,
     RocketLaunchIcon,
     QuestionMarkCircleIcon,
-    CalendarDaysIcon
+    CalendarDaysIcon,
+    LinkIcon
 } from '@heroicons/react/24/solid';
 import {
     handleLogout,
@@ -148,14 +149,24 @@ export default function Navbar({
                             {hasFeature(user, FeatureAccess.ProviderAccess) && (
                                 <>
                                     {canSwitchFacility(user) && (
-                                        <li>
-                                            <Link to="/learning-platforms">
-                                                <ULIComponent
-                                                    icon={CloudIcon}
-                                                />
-                                                Learning Platforms
-                                            </Link>
-                                        </li>
+                                        <>
+                                            <li>
+                                                <Link to="/learning-platforms">
+                                                    <ULIComponent
+                                                        icon={CloudIcon}
+                                                    />
+                                                    Learning Platforms
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link to="/canvas-integration">
+                                                    <ULIComponent
+                                                        icon={LinkIcon}
+                                                    />
+                                                    Canvas Integration
+                                                </Link>
+                                            </li>
+                                        </>
                                     )}
                                     <li>
                                         <Link to="/course-catalog-admin">
@@ -346,7 +357,7 @@ export default function Navbar({
                                     />
                                 </label>
                             </li>
-                            {user && user.role === UserRole.SystemAdmin && (
+                            {user?.role === UserRole.SystemAdmin && (
                                 <>
                                     <li>
                                         <button

@@ -539,7 +539,7 @@ export default function EventAttendance() {
 
             {isLoading && <div>Loading...</div>}
 
-            {error && error.message === 'Conflict' ? (
+            {error?.message === 'Conflict' ? (
                 <div className="text-error">
                     Unable to mark attendance for a cancelled event
                 </div>

@@ -150,7 +150,7 @@ export default function ClassStatus({
                     e.stopPropagation();
                 }}
                 onBlur={(e) => {
-                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                    if (!e.currentTarget.contains(e.relatedTarget)) {
                         setDropdownOpen(false);
                     }
                 }}

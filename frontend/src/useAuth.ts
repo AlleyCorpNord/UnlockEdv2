@@ -43,7 +43,7 @@ export const isSysAdmin = (u: User) => u.role === UserRole.SystemAdmin;
 export const isDeptAdmin = (u: User) => u.role === UserRole.DepartmentAdmin;
 
 export const isFacilityAdmin = (user: User | undefined): boolean => {
-    return user !== undefined && user.role === UserRole.FacilityAdmin;
+    return user?.role === UserRole.FacilityAdmin;
 };
 
 export const isStudent = (user: User): boolean => {

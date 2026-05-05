@@ -122,7 +122,7 @@ export const ReportExportModal = forwardRef<
                 user_id: selectedResident?.id?.toString()
             };
             const request = config.buildRequest(
-                formWithResident as unknown as Record<string, unknown>,
+                formWithResident,
                 contextData
             );
             const { blob, filename } = await generateReport(request);

@@ -136,7 +136,7 @@ const getLibraryOptionsHelper = async ({ request }: { request: Request }) => {
                   ({
                       key: library.id,
                       value: library.title
-                  }) as Option
+                  })
           )
         : [];
     return libraryOptions;

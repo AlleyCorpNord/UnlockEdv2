@@ -23,6 +23,7 @@ type ProviderPlatformType string
 const (
 	CanvasOSS   ProviderPlatformType = "canvas_oss"
 	CanvasCloud ProviderPlatformType = "canvas_cloud"
+	CanvasOAuth ProviderPlatformType = "canvas_oauth"
 	Kolibri     ProviderPlatformType = "kolibri"
 	Brightspace ProviderPlatformType = "brightspace"
 )

@@ -11,6 +11,7 @@ import Error from '@/Pages/Error';
 import CourseCatalog from '@/Pages/CourseCatalog';
 import ProviderUserManagement from '@/Pages/ProviderUserManagement';
 import ProviderPlatformManagement from '@/Pages/ProviderPlatformManagement';
+import CanvasIntegration from '@/Pages/CanvasIntegration';
 
 const routes: RouteObject = DeclareAuthenticatedRoutes(
     [
@@ -78,6 +79,14 @@ const deptAdminRoutes: RouteObject = DeclareAuthenticatedRoutes(
                 title: 'Learning Platforms'
             },
             element: <ProviderPlatformManagement />,
+            errorElement: <Error />
+        },
+        {
+            path: 'canvas-integration',
+            handle: {
+                title: 'Canvas Integration'
+            },
+            element: <CanvasIntegration />,
             errorElement: <Error />
         }
     ],

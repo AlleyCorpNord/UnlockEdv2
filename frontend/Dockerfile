@@ -1,5 +1,6 @@
-FROM node:21-alpine3.19 as builder
+FROM node:21-bookworm-slim as builder
 WORKDIR /app/
+RUN corepack enable
 COPY . .
 
 # VITE args and envrionment variables
