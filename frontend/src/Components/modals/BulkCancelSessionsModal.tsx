@@ -10,7 +10,6 @@ import {
 import { KeyedMutator } from 'swr';
 
 interface BulkCancelSessionsModalProps {
-    ref: React.ForwardedRef<HTMLDialogElement>;
     onSuccess?: () => void;
     facilityId: number;
     mutate: KeyedMutator<ServerResponseMany<Class>>;

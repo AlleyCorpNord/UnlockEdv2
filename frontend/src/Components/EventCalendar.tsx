@@ -36,6 +36,7 @@ export default function EventCalendar({
     scrollTime.setHours(6, 0, 0, 0);
     return (
         <div className="p-4">
+            {/* @ts-expect-error react-big-calendar types incompatible with React 18 */}
             <Calendar
                 localizer={localizer}
                 events={events as FacilityProgramClassEvent[]}

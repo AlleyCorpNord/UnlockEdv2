@@ -35,6 +35,7 @@ import {
     closeModal,
     showModal
 } from '@/Components/modals';
+import { Control } from 'react-hook-form';
 
 interface ProgramInputs {
     name: string;
@@ -181,6 +182,7 @@ export default function ProgramManagementForm() {
         const selectedIDs = selected.map((selectedOpt) =>
             String(selectedOpt.value)
         );
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string
         const currentIDs = options.map((option) => String(option.value));
         const removedIDs = currentIDs.filter((id) => !selectedIDs.includes(id));
         const disabledIDs = removedIDs.filter((id) =>
@@ -194,11 +196,13 @@ export default function ProgramManagementForm() {
             ]);
 
             return options.filter((option) =>
+                // eslint-disable-next-line @typescript-eslint/no-base-to-string
                 preservedSet.has(String(option.value))
             );
         }
 
         if (selected.find((opt) => opt.value === 'all')) {
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string
             return options.filter((opt) => String(opt.value) !== 'all');
         }
         return selected;
@@ -243,7 +247,8 @@ export default function ProgramManagementForm() {
                         placeholder="Select Credit Types"
                         name="credit_type"
                         label="Credit Type"
-                        control={control}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        control={control as unknown as Control<any>}
                         optionList={Object.values(CreditType)}
                         isMulti
                         required
@@ -253,7 +258,8 @@ export default function ProgramManagementForm() {
                         placeholder="Select Program Types"
                         name="program_type"
                         label="Program Type"
-                        control={control}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        control={control as unknown as Control<any>}
                         optionList={Object.values(ProgramType)}
                         isMulti
                         required
@@ -263,7 +269,8 @@ export default function ProgramManagementForm() {
                         placeholder="Select Funding Type"
                         name="funding_type"
                         label="Funding Type"
-                        control={control}
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        control={control as unknown as Control<any>}
                         optionList={Object.values(FundingType)}
                         required
                         errors={errors}
@@ -279,7 +286,8 @@ export default function ProgramManagementForm() {
                                 name="facilities"
                                 label="Facility selection:"
                                 placeholder="Select Facilities"
-                                control={control}
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                control={control as unknown as Control<any>}
                                 required
                                 optionList={facilityOptionsSelectAll}
                                 preformattedOptions

@@ -2,70 +2,73 @@ import { forwardRef } from 'react';
 import { CRUDModalProps, FormModal, FormInputTypes } from '.';
 import API from '@/api/api';
 import { useCheckResponse } from '@/Hooks/useCheckResponse';
-import { useAuth } from '@/useAuth';
 import { FieldValues, SubmitHandler } from 'react-hook-form';
 import { ServerResponseOne } from '@/common';
 
-interface CanvasAuthResponse {
-    auth_url: string;
-    state: string;
+interface CanvasAPIKeyResponse {
+    id: string;
+    canvas_url: string;
+    created_at: string;
 }
 
 export const ConnectCanvasModal = forwardRef(function (
-    { mutate }: CRUDModalProps,
+    { mutate }: CRUDModalProps<CanvasAPIKeyResponse>,
     modalRef: React.ForwardedRef<HTMLDialogElement>
 ) {
-    const { user } = useAuth();
-    const checkResponse = useCheckResponse({
+    const checkResponse = useCheckResponse<CanvasAPIKeyResponse>({
         mutate,
         refModal: modalRef
     });
 
     const handleConnect: SubmitHandler<FieldValues> = async (data) => {
-        if (!user) {
-            checkResponse(false, 'User not authenticated');
-            return;
-        }
+        const canvasUrl = data.canvas_url as string;
+        const apiKey = data.api_key as string;
 
         try {
-            // First, save Canvas OAuth config
-            const configResponse = (await API.post('canvas/config', {
-                client_id: data.client_id,
-                client_secret: data.client_secret
+            const testResponse = (await API.post<
+                unknown,
+                { canvas_url: string; api_key: string }
+            >('canvas/test-connection', {
+                canvas_url: canvasUrl,
+                api_key: apiKey
             })) as ServerResponseOne<unknown>;
 
-            if (!configResponse.success) {
+            if (!testResponse.success) {
                 checkResponse(
                     false,
-                    configResponse.message ||
-                        'Failed to save Canvas credentials'
+                    testResponse.message ??
+                        'Failed to connect to Canvas. Please verify your URL and API key.',
+                    ''
                 );
                 return;
             }
 
-            // Then initiate Canvas connection
-            const response = (await API.post<CanvasAuthResponse>(
-                'canvas/connect',
-                {
-                    facility_id: user.facility.id.toString(),
-                    canvas_url: data.canvas_url
-                }
-            )) as ServerResponseOne<CanvasAuthResponse>;
+            const response = (await API.post<
+                CanvasAPIKeyResponse,
+                { canvas_url: string; api_key: string }
+            >('canvas/api-keys', {
+                canvas_url: canvasUrl,
+                api_key: apiKey
+            })) as ServerResponseOne<CanvasAPIKeyResponse>;
 
-            if (response.success && response.data?.auth_url) {
-                // Redirect to Canvas OAuth flow
-                window.location.href = response.data.auth_url;
-                return;
+            if (response.success) {
+                checkResponse(
+                    true,
+                    '',
+                    'Canvas instance connected successfully'
+                );
             } else {
                 checkResponse(
                     false,
-                    response.message || 'Failed to initiate Canvas connection'
+                    response.message ?? 'Failed to save Canvas API key',
+                    ''
                 );
             }
         } catch (err) {
             checkResponse(
                 false,
-                err instanceof Error ? err.message : 'An error occurred'
+                err instanceof Error ? err.message : 'An error occurred',
+                ''
             );
         }
     };
@@ -76,24 +79,17 @@ export const ConnectCanvasModal = forwardRef(function (
             inputs={[
                 {
                     type: FormInputTypes.Text,
-                    label: 'Canvas Client ID',
-                    interfaceRef: 'client_id',
-                    required: true,
-                    placeholder: 'Your Canvas OAuth Client ID'
-                },
-                {
-                    type: FormInputTypes.Text,
-                    label: 'Canvas Client Secret',
-                    interfaceRef: 'client_secret',
-                    required: true,
-                    placeholder: 'Your Canvas OAuth Client Secret'
-                },
-                {
-                    type: FormInputTypes.Text,
                     label: 'Canvas URL',
                     interfaceRef: 'canvas_url',
                     required: true,
                     placeholder: 'https://your-canvas.instructure.com'
+                },
+                {
+                    type: FormInputTypes.Text,
+                    label: 'Canvas API Key',
+                    interfaceRef: 'api_key',
+                    required: true,
+                    placeholder: 'Your Canvas API token'
                 }
             ]}
             onSubmit={handleConnect}

@@ -12,7 +12,6 @@ import {
 } from '@/types/events';
 
 interface BulkCancelSessionsFormModalProps {
-    ref: React.ForwardedRef<HTMLDialogElement>;
     facilityId: number;
     onSubmit: (
         request: BulkCancelSessionsRequest,

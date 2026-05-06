@@ -275,9 +275,8 @@ export const RescheduleClassEventModal = forwardRef(function (
                 text={
                     <div>
                         <p>
-                            {confirmMessage
-                                ? confirmMessage
-                                : 'Are you sure you want to reschedule this event?'}
+                            {confirmMessage ??
+                                'Are you sure you want to reschedule this event?'}
                         </p>
                     </div>
                 }

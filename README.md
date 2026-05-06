@@ -71,32 +71,13 @@ If this does not work because your directory is named something different, you c
 **Integrations:**
 
 - _Canvas LMS_:
-  If you wish to run and develop Canvas integrations locally:
+  For detailed Canvas setup, development, and integration instructions, see [CANVAS_SETUP.md](CANVAS_SETUP.md).
   
-  1. Start Canvas and Redis:
-     ```bash
-     docker-compose up redis canvas
-     ```
-     **Note:** Canvas builds from source on first run, which takes several minutes. Subsequent starts are faster.
-
-  2. Initialize the Canvas database with migrations (run this once after containers are healthy):
-     ```bash
-     docker-compose exec canvas bundle exec rake db:create db:migrate
-     ```
-
-  3. Access Canvas at `http://127.0.0.1:3000` and complete the setup wizard.
-
-  4. Set up Canvas OAuth2 for UnlockEd integration:
-     - In Canvas (as admin): Settings → Developer Keys → Create New Key
-     - Application name: "UnlockEd"
-     - Redirect URI: `http://127.0.0.1/api/canvas/oauth/callback`
-     - Copy the Client ID and Client Secret
-     - Add to `.env`:
-       ```bash
-       CANVAS_OAUTH_CLIENT_ID=<client_id>
-       CANVAS_OAUTH_CLIENT_SECRET=<client_secret>
-       CANVAS_OAUTH_REDIRECT_URI=http://127.0.0.1/api/canvas/oauth/callback
-       ```
+  Quick summary:
+  1. Clone Canvas: `git clone https://github.com/instructure/canvas-lms.git canvas-lms`
+  2. Follow the setup steps in [CANVAS_SETUP.md](CANVAS_SETUP.md) for full initialization
+  3. Canvas will be accessible at `http://127.0.0.1/canvas/` through UnlockEd's proxy
+  4. OAuth integration is pre-configured in the backend and frontend
 
   5. Canvas OAuth flow - Prison admins can now:
      - Click "Connect Canvas" in UnlockEd admin panel

@@ -11,7 +11,6 @@ import {
 } from '@/types/events';
 
 interface BulkCancelSessionsConfirmModalProps {
-    ref: React.ForwardedRef<HTMLDialogElement>;
     request: BulkCancelSessionsRequest | null;
     preview: BulkCancelSessionsPreview | null;
     onSuccess?: () => void;

@@ -154,32 +154,6 @@ services:
       timeout: 5s
       retries: 5
 
-  canvas:
-    build:
-      context: ./canvas-lms
-      dockerfile: Dockerfile
-      args:
-        RUBY: "3.4"
-    ports:
-      - "3000:3000"
-    networks:
-      - intranet
-    environment:
-      - RAILS_ENV=development
-      - DATABASE_URL=postgres://docker:sekret@postgres:5432/canvas_development
-      - REDIS_URL=redis://redis:6379
-      - CANVAS_LMS_USER_ID=1000
-    volumes:
-      - ./canvas-lms:/usr/src/app
-      - canvas_gems:/home/docker/.gem
-      - canvas_yarn:/home/docker/.cache/yarn
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-
   nats:
     image: nats:latest
     networks:
@@ -275,8 +249,6 @@ volumes:
   nats_data:
   redis_data:
   postgres_data:
-  canvas_gems:
-  canvas_yarn:
   config:
     driver: local
     driver_opts:

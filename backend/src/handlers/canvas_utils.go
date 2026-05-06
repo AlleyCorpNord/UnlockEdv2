@@ -14,22 +14,27 @@ func (srv *Server) GetCanvasClientForFacility(facilityID uint, canvasURL string)
 		"canvas_url":  canvasURL,
 	}
 
-	// Get the Canvas OAuth token from database
-	token, err := srv.Db.GetCanvasConnectionByURL(facilityID, canvasURL)
+	// Get the Canvas API key from database
+	apiKey, err := srv.Db.GetCanvasAPIKeyByURL(facilityID, canvasURL)
 	if err != nil {
-		log.WithFields(fields).Errorf("error getting canvas connection: %v", err)
+		log.WithFields(fields).Errorf("error getting canvas api key: %v", err)
 		return nil, err
 	}
 
-	// Decrypt the access token
-	decryptedToken, err := models.DecryptAccessKey(token.AccessToken)
+	if apiKey == nil {
+		log.WithFields(fields).Errorf("canvas api key not found")
+		return nil, err
+	}
+
+	// Decrypt the API key
+	decryptedKey, err := models.DecryptAccessKey(apiKey.APIKey)
 	if err != nil {
-		log.WithFields(fields).Errorf("error decrypting canvas token: %v", err)
+		log.WithFields(fields).Errorf("error decrypting canvas api key: %v", err)
 		return nil, err
 	}
 
 	// Create and return Canvas client
-	client := NewCanvasClient(canvasURL, decryptedToken, srv.Client)
+	client := NewCanvasClient(canvasURL, decryptedKey, srv.Client)
 	return client, nil
 }
 
@@ -101,43 +106,23 @@ func (srv *Server) TestCanvasConnection(facilityID uint, canvasURL string) error
 	return nil
 }
 
-// GetCanvasClientForConnection retrieves a Canvas client using a stored connection
-func (srv *Server) GetCanvasClientForConnection(connection *models.CanvasOAuthToken) (*CanvasClient, error) {
+// GetCanvasClientForAPIKey retrieves a Canvas client using a stored API key
+func (srv *Server) GetCanvasClientForAPIKey(apiKey *models.CanvasAPIKey) (*CanvasClient, error) {
 	fields := log.Fields{
-		"connection_id": connection.ID,
-		"canvas_url":    connection.CanvasURL,
+		"key_id":     apiKey.ID,
+		"canvas_url": apiKey.CanvasURL,
 	}
 
-	// Decrypt the access token
-	decryptedToken, err := models.DecryptAccessKey(connection.AccessToken)
+	// Decrypt the API key
+	decryptedKey, err := models.DecryptAccessKey(apiKey.APIKey)
 	if err != nil {
-		log.WithFields(fields).Errorf("error decrypting canvas token: %v", err)
+		log.WithFields(fields).Errorf("error decrypting canvas api key: %v", err)
 		return nil, err
 	}
 
 	// Create and return Canvas client
-	client := NewCanvasClient(connection.CanvasURL, decryptedToken, srv.Client)
+	client := NewCanvasClient(apiKey.CanvasURL, decryptedKey, srv.Client)
 	return client, nil
-}
-
-// RefreshCanvasToken attempts to refresh an expired Canvas OAuth token
-// Note: This requires Canvas to support refresh tokens in their OAuth flow
-func (srv *Server) RefreshCanvasToken(connection *models.CanvasOAuthToken) (*CanvasTokenResponse, error) {
-	fields := log.Fields{
-		"connection_id": connection.ID,
-		"canvas_url":    connection.CanvasURL,
-	}
-
-	if connection.RefreshToken == "" {
-		log.WithFields(fields).Warn("no refresh token available for canvas connection")
-		return nil, nil
-	}
-
-	// Exchange refresh token for new access token
-	// Note: This requires implementing the refresh token endpoint
-	// Canvas may not support this, so it might be optional
-	log.WithFields(fields).Debug("refresh token exchange not yet implemented")
-	return nil, nil
 }
 
 // ValidateCanvasURL verifies that a Canvas URL is accessible

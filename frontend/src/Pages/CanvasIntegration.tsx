@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import useSWR from 'swr';
 import API from '@/api/api';
 import { useAuth, hasFeature } from '@/useAuth';
@@ -37,7 +37,7 @@ export default function CanvasIntegration() {
         error,
         isLoading
     } = useSWR<ServerResponseMany<CanvasConnection>, Error>(
-        `/api/canvas/connections`,
+        `/api/canvas/api-keys`,
         {
             revalidateOnFocus: false,
             dedupingInterval: 10000
@@ -45,28 +45,6 @@ export default function CanvasIntegration() {
     );
 
     const connections = connectionsResponse?.data ?? [];
-
-    // Check for OAuth callback messages
-    useEffect(() => {
-        const queryParams = new URLSearchParams(window.location.search);
-        const status = queryParams.get('canvas_status');
-        const message = queryParams.get('canvas_message');
-
-        if (status && message) {
-            if (status === 'success') {
-                toaster(decodeURIComponent(message), ToastState.success);
-                void mutate(); // Refresh connections list
-            } else if (status === 'error') {
-                toaster(decodeURIComponent(message), ToastState.error);
-            }
-
-            // Clear query params
-            const url = new URL(window.location.href);
-            url.searchParams.delete('canvas_status');
-            url.searchParams.delete('canvas_message');
-            window.history.replaceState({}, document.title, url.toString());
-        }
-    }, [toaster, mutate]);
 
     const handleDisconnect = async (connectionId: string) => {
         if (
@@ -80,7 +58,7 @@ export default function CanvasIntegration() {
         setDisconnectingId(connectionId);
         try {
             const response = await API.delete(
-                `canvas/connections/${connectionId}`
+                `canvas/api-keys/${connectionId}`
             );
             if (response.success) {
                 toaster(
@@ -150,7 +128,9 @@ export default function CanvasIntegration() {
                             <CanvasConnectionCard
                                 key={connection.id}
                                 connection={connection}
-                                onDisconnect={handleDisconnect}
+                                onDisconnect={(id) => {
+                                    void handleDisconnect(id);
+                                }}
                                 isLoading={disconnectingId === connection.id}
                             />
                         ))}
@@ -161,27 +141,27 @@ export default function CanvasIntegration() {
             <div className="grid grid-cols-2 gap-8 mt-8">
                 <div>
                     <h3 className="text-lg font-semibold mb-4">
-                        Set up Canvas OAuth (Admin Only)
+                        Generate Canvas API Key (Admin Only)
                     </h3>
                     <ol className="list-decimal list-inside space-y-2 text-sm">
                         <li>Log in to Canvas as an administrator</li>
-                        <li>Navigate to Settings → Developer Keys</li>
-                        <li>Click "Create New Key"</li>
+                        <li>Click your profile icon in the top right corner</li>
+                        <li>Select "Settings"</li>
+                        <li>Click "Approved Integrations"</li>
+                        <li>Click "+ New Access Token"</li>
                         <li>
-                            Configure:
+                            Fill in:
                             <ul className="list-disc list-inside ml-4 mt-1">
-                                <li>Application Name: "UnlockEd"</li>
+                                <li>Purpose: "UnlockEd"</li>
                                 <li>
-                                    Redirect URI:{' '}
-                                    <code className="bg-slate-500 px-2 py-1 rounded text-xs">
-                                        http://127.0.0.1/api/canvas/oauth/callback
-                                    </code>
+                                    Expires: Select an appropriate expiration
+                                    date or leave blank for no expiration
                                 </li>
                             </ul>
                         </li>
-                        <li>Copy the Client ID and Client Secret</li>
+                        <li>Click "Generate Token"</li>
                         <li>
-                            Enter them when you click "Connect Canvas Instance"
+                            Copy the token (you won't be able to see it again)
                         </li>
                     </ol>
                 </div>
@@ -193,20 +173,16 @@ export default function CanvasIntegration() {
                     <ol className="list-decimal list-inside space-y-2 text-sm">
                         <li>Click "Connect Canvas Instance" above</li>
                         <li>
-                            Enter your Canvas Client ID and Client Secret (from
-                            Canvas Settings → Developer Keys)
-                        </li>
-                        <li>
                             Enter your Canvas instance URL (e.g.,
                             https://your-institution.instructure.com)
                         </li>
-                        <li>You'll be redirected to Canvas to authenticate</li>
                         <li>
-                            Grant permission for UnlockEd to access your data
+                            Enter your Canvas API token (generated from Canvas
+                            Settings → Approved Integrations)
                         </li>
                         <li>
-                            Your Canvas instance will be securely connected to
-                            UnlockEd
+                            Click submit and your Canvas instance will be
+                            connected to UnlockEd
                         </li>
                     </ol>
                 </div>

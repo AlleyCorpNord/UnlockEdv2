@@ -2,38 +2,30 @@ package models
 
 import (
 	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
-type CanvasOAuthToken struct {
-	ID                 string            `gorm:"primaryKey;type:uuid" json:"id"`
-	ProviderPlatformID uint              `gorm:"not null;index" json:"provider_platform_id"`
-	FacilityID         uint              `gorm:"not null;index" json:"facility_id"`
-	CanvasURL          string            `gorm:"size:255;not null" json:"canvas_url"`
-	AccessToken        string            `gorm:"type:text;not null" json:"-"` // encrypted
-	RefreshToken       string            `gorm:"type:text" json:"-"`          // encrypted
-	TokenExpiresAt     *time.Time        `json:"token_expires_at"`
-	State              string            `gorm:"size:100" json:"-"`
-	CreatedAt          time.Time         `json:"created_at"`
-	UpdatedAt          time.Time         `json:"updated_at"`
-	ProviderPlatform   *ProviderPlatform `gorm:"foreignKey:ProviderPlatformID;references:ID" json:"-"`
-	Facility           *Facility         `gorm:"foreignKey:FacilityID;references:ID" json:"-"`
-}
-
-func (CanvasOAuthToken) TableName() string {
-	return "canvas_oauth_tokens"
-}
-
-type CanvasOAuthState struct {
-	StateToken string    `gorm:"primaryKey" json:"state_token"`
-	FacilityID uint      `gorm:"index" json:"facility_id"`
-	CanvasURL  string    `gorm:"size:255" json:"canvas_url"`
+type CanvasAPIKey struct {
+	ID         string    `gorm:"primaryKey;type:uuid" json:"id"`
+	FacilityID uint      `gorm:"not null;index" json:"facility_id"`
+	CanvasURL  string    `gorm:"size:255;not null" json:"canvas_url"`
+	APIKey     string    `gorm:"type:text;not null" json:"-"` // encrypted
 	CreatedAt  time.Time `json:"created_at"`
-	ExpiresAt  time.Time `json:"expires_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 	Facility   *Facility `gorm:"foreignKey:FacilityID;references:ID" json:"-"`
 }
 
-func (CanvasOAuthState) TableName() string {
-	return "canvas_oauth_state"
+func (k *CanvasAPIKey) BeforeCreate(tx *gorm.DB) error {
+	if k.ID == "" {
+		k.ID = uuid.NewString()
+	}
+	return nil
+}
+
+func (CanvasAPIKey) TableName() string {
+	return "canvas_api_keys"
 }
 
 // Canvas API Models
@@ -83,16 +75,3 @@ type CanvasEnrollment struct {
 	State    string `json:"state"` // active, completed, etc
 }
 
-type CanvasOAuthConfig struct {
-	ID           string    `gorm:"primaryKey;type:uuid" json:"id"`
-	FacilityID   uint      `gorm:"not null;uniqueIndex" json:"facility_id"`
-	ClientID     string    `gorm:"size:255;not null" json:"-"`  // encrypted
-	ClientSecret string    `gorm:"type:text;not null" json:"-"` // encrypted
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
-	Facility     *Facility `gorm:"foreignKey:FacilityID;references:ID" json:"-"`
-}
-
-func (CanvasOAuthConfig) TableName() string {
-	return "canvas_oauth_configs"
-}

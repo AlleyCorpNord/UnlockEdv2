@@ -25,19 +25,26 @@ export default function CanvasConnectionCard({
             <td className="justify-self-start">
                 <div className="flex flex-col gap-1">
                     <span className="font-medium">{connection.canvas_url}</span>
-                    <span className="text-sm text-gray-500">Connected {formattedDate}</span>
+                    <span className="text-sm text-gray-500">
+                        Connected {formattedDate}
+                    </span>
                 </div>
             </td>
             <td className="text-center">
                 <span className="badge badge-success">Connected</span>
             </td>
             <td className="flex flex-row gap-3 justify-self-end cursor-pointer">
-                <ULIComponent
-                    dataTip={isLoading ? 'Disconnecting...' : 'Disconnect Canvas'}
-                    icon={TrashIcon}
-                    onClick={() => onDisconnect(connection.id)}
+                <span
                     className={isLoading ? 'opacity-50 cursor-not-allowed' : ''}
-                />
+                >
+                    <ULIComponent
+                        dataTip={
+                            isLoading ? 'Disconnecting...' : 'Disconnect Canvas'
+                        }
+                        icon={TrashIcon}
+                        onClick={() => onDisconnect(connection.id)}
+                    />
+                </span>
             </td>
         </tr>
     );
