@@ -50,11 +50,11 @@ func UpdateStruct(dst, src any) {
 	srcVal := reflect.ValueOf(src).Elem()
 	dstVal := reflect.ValueOf(dst).Elem()
 
-	if srcVal.Kind() == reflect.Ptr {
+	if srcVal.Kind() == reflect.Pointer {
 		srcVal = srcVal.Elem()
 	}
 
-	if dstVal.Kind() == reflect.Ptr {
+	if dstVal.Kind() == reflect.Pointer {
 		dstVal = dstVal.Elem()
 	}
 
@@ -97,6 +97,7 @@ type QueryContext struct {
 	OrderBy            string
 	Order              string
 	IsAdmin            bool
+	CanSwitchFacility  bool
 	Search             string
 	Tags               []string
 	Total              int64
