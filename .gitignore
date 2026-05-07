@@ -26,3 +26,4 @@ jar
 /csvs/zims/*.zim
 /.claude
 canvas/*
+frontend/.yarn/cache

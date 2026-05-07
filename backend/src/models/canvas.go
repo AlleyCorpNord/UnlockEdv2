@@ -74,4 +74,3 @@ type CanvasEnrollment struct {
 	Type     string `json:"type"`  // StudentEnrollment, TeacherEnrollment, etc
 	State    string `json:"state"` // active, completed, etc
 }
-
