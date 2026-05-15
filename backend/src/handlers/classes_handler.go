@@ -67,6 +67,9 @@ func (srv *Server) handleGetClassesForProgram(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		return newInvalidIdServiceError(err, "program ID")
 	}
+	if uint(id) >= models.CanvasProgramIDOffset {
+		return srv.handleGetCanvasClasses(w, r, log, uint(id))
+	}
 	args := srv.getQueryContext(r)
 	service := services.NewClassesService(srv.Db)
 	classes, err := service.GetProgramClassDetailsForProgram(&args, id)
@@ -81,6 +84,9 @@ func (srv *Server) handleGetClass(w http.ResponseWriter, r *http.Request, log sL
 	id, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
+	}
+	if uint(id) >= models.CanvasClassIDOffset {
+		return srv.handleGetCanvasClassDetail(w, r, log, uint(id))
 	}
 	class, err := srv.Db.GetClassByID(id)
 	if err != nil {
@@ -286,6 +292,12 @@ func (srv *Server) handleGetClassHistory(w http.ResponseWriter, r *http.Request,
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
 	}
+	if uint(id) >= models.CanvasClassIDOffset {
+		args := srv.getQueryContext(r)
+		return writePaginatedResponse(w, http.StatusOK,
+			[]models.ChangeLogEntry{},
+			models.NewPaginationInfo(1, args.PerPage, 0))
+	}
 	args := srv.getQueryContext(r)
 	categories := r.URL.Query()["categories"]
 	historyEvents, err := srv.Db.GetChangeLogEntries(&args, "program_classes", id, categories)
@@ -306,6 +318,12 @@ func (srv *Server) handleGetAttendanceFlagsForClass(w http.ResponseWriter, r *ht
 	id, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
+	}
+	if uint(id) >= models.CanvasClassIDOffset {
+		args := srv.getQueryContext(r)
+		return writePaginatedResponse(w, http.StatusOK,
+			[]models.AttendanceFlag{},
+			models.NewPaginationInfo(1, args.PerPage, 0))
 	}
 	args := srv.getQueryContext(r)
 	flags, err := srv.Db.GetAttendanceFlagsForClass(id, &args)
@@ -388,6 +406,9 @@ func (srv *Server) handleGetCumulativeAttendanceRate(w http.ResponseWriter, r *h
 	classID, err := strconv.Atoi(r.PathValue("class_id"))
 	if err != nil {
 		return newInvalidIdServiceError(err, "class ID")
+	}
+	if uint(classID) >= models.CanvasClassIDOffset {
+		return writeJsonResponse(w, http.StatusOK, map[string]float64{"attendance_rate": 0})
 	}
 	attendanceRate, err := srv.Db.GetCumulativeAttendanceRateForClass(r.Context(), classID)
 	if err != nil {

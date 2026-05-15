@@ -259,11 +259,20 @@ func (env *TestEnv) CreateTestEvent(classID uint, rrule string) (*models.Program
 	if err != nil {
 		return nil, err
 	}
+	var class models.ProgramClass
+	if err := env.DB.First(&class, "id = ?", classID).Error; err != nil {
+		return nil, err
+	}
+	instructorID, err := env.getOrCreateTestInstructor(class.FacilityID)
+	if err != nil {
+		return nil, err
+	}
 	event := &models.ProgramClassEvent{
 		ClassID:        classID,
 		Duration:       "2h",
 		RecurrenceRule: rrule,
 		RoomID:         &roomID,
+		InstructorID:   &instructorID,
 	}
 
 	if err := env.DB.Create(event).Error; err != nil {
@@ -286,11 +295,20 @@ func (env *TestEnv) CreateTestEventWithRRule(classID uint, customRRule string) (
 	if err != nil {
 		return nil, err
 	}
+	var class models.ProgramClass
+	if err := env.DB.First(&class, "id = ?", classID).Error; err != nil {
+		return nil, err
+	}
+	instructorID, err := env.getOrCreateTestInstructor(class.FacilityID)
+	if err != nil {
+		return nil, err
+	}
 	event := &models.ProgramClassEvent{
 		ClassID:        classID,
 		Duration:       "2h",
 		RecurrenceRule: customRRule,
 		RoomID:         &roomID,
+		InstructorID:   &instructorID,
 	}
 	if err := env.DB.Create(event).Error; err != nil {
 		return nil, err
@@ -375,4 +393,18 @@ func (env *TestEnv) getOrCreateTestRoom(classID uint) (uint, error) {
 		return 0, err
 	}
 	return room.ID, nil
+}
+
+func (env *TestEnv) getOrCreateTestInstructor(facilityID uint) (uint, error) {
+	var instructor models.User
+	username := fmt.Sprintf("testinstructor%d", facilityID)
+	result := env.DB.Where("username = ? AND facility_id = ?", username, facilityID).First(&instructor)
+	if result.Error == nil {
+		return instructor.ID, nil
+	}
+	user, err := env.CreateTestUser(username, models.FacilityAdmin, facilityID, "")
+	if err != nil {
+		return 0, err
+	}
+	return user.ID, nil
 }

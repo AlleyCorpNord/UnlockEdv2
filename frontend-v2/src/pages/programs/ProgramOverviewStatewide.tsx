@@ -911,6 +911,7 @@ export default function ProgramOverviewStatewide() {
                                                 </Tooltip>
                                             </TableCell>
                                             <TableCell>
+                                                {(program?.id ?? 0) < 100_000_000 && (
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
@@ -925,6 +926,7 @@ export default function ProgramOverviewStatewide() {
                                                     View at Facility
                                                     <ArrowRight className="size-4" />
                                                 </Button>
+                                                )}
                                             </TableCell>
                                         </TableRow>
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import {
     ProviderPlatform,
@@ -20,11 +20,12 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { ArrowPathIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
 import { useDebounceValue } from 'usehooks-ts';
 
 export default function ProviderUserManagement() {
     const { id: providerId } = useParams();
+    const navigate = useNavigate();
 
     const [usersToImport, setUsersToImport] = useState<ProviderUser[]>([]);
     const [userToMap, setUserToMap] = useState<ProviderUser | undefined>();
@@ -54,7 +55,9 @@ export default function ProviderUserManagement() {
         `/api/actions/provider-platforms/${providerId}/get-users?page=${currentPage}&per_page=${perPage}&search=${debouncedSearch}&clear_cache=${cache}`
     );
 
-    const { data: unmappedResp, mutate: mutateUnmapped } = useSWR<ServerResponseMany<User>>(
+    const { data: unmappedResp, mutate: mutateUnmapped } = useSWR<
+        ServerResponseMany<User>
+    >(
         showMapModal
             ? `/api/users?include=only_unmapped&provider_id=${providerId}&per_page=50`
             : null
@@ -65,7 +68,9 @@ export default function ProviderUserManagement() {
         ? unmappedUsers.filter(
               (u) =>
                   u.username.toLowerCase().includes(mapSearch.toLowerCase()) ||
-                  `${u.name_first} ${u.name_last}`.toLowerCase().includes(mapSearch.toLowerCase())
+                  `${u.name_first} ${u.name_last}`
+                      .toLowerCase()
+                      .includes(mapSearch.toLowerCase())
           )
         : unmappedUsers;
 
@@ -171,7 +176,7 @@ export default function ProviderUserManagement() {
 
     if (providerLoading) {
         return (
-            <div className="bg-muted min-h-screen p-6">
+            <div className="bg-[#E2E7EA] min-h-screen p-6">
                 <div className="max-w-7xl mx-auto space-y-6">
                     <Skeleton className="h-10 w-64" />
                     <Skeleton className="h-96 w-full rounded-lg" />
@@ -182,7 +187,7 @@ export default function ProviderUserManagement() {
 
     if (provider?.type === ProviderPlatformType.KOLIBRI) {
         return (
-            <div className="bg-muted min-h-screen p-6">
+            <div className="bg-[#E2E7EA] min-h-screen p-6">
                 <div className="max-w-7xl mx-auto">
                     <div className="bg-card rounded-lg border border-border p-8 text-center">
                         <p className="text-muted-foreground">
@@ -251,8 +256,19 @@ export default function ProviderUserManagement() {
     ];
 
     return (
-        <div className="bg-muted min-h-screen p-6">
+        <div className="bg-[#E2E7EA] min-h-screen p-6">
             <div className="max-w-7xl mx-auto space-y-6">
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <button
+                        onClick={() =>
+                            navigate(`/learning-platforms/${providerId}`)
+                        }
+                        className="flex items-center gap-1 hover:text-foreground transition-colors"
+                    >
+                        <ChevronLeftIcon className="size-4" />
+                        {provider?.name ?? 'Learning Platform'}
+                    </button>
+                </div>
                 <PageHeader
                     title={provider?.name ?? 'Provider Users'}
                     subtitle="Manage and import users from the external platform"
@@ -329,7 +345,7 @@ export default function ProviderUserManagement() {
                                         className={`flex items-center justify-between px-3 py-2 cursor-pointer text-sm border-b last:border-b-0 ${
                                             selectedUserId === u.id
                                                 ? 'bg-[#556830]/10'
-                                                : 'hover:bg-muted'
+                                                : 'hover:bg-[#E2E7EA]'
                                         }`}
                                     >
                                         <div>
@@ -358,7 +374,9 @@ export default function ProviderUserManagement() {
                             </Button>
                             <Button
                                 onClick={() => void handleMapUser()}
-                                disabled={mapSubmitting || selectedUserId === null}
+                                disabled={
+                                    mapSubmitting || selectedUserId === null
+                                }
                                 className="bg-[#203622] text-white hover:bg-[#203622]/90"
                             >
                                 {mapSubmitting ? 'Mapping...' : 'Map User'}
@@ -377,7 +395,7 @@ export default function ProviderUserManagement() {
                         {importedUsers.map((u) => (
                             <div
                                 key={u.username}
-                                className="flex items-center justify-between rounded-md bg-muted p-3"
+                                className="flex items-center justify-between rounded-md bg-[#E2E7EA] p-3"
                             >
                                 <span className="text-sm font-medium text-foreground">
                                     {u.username}

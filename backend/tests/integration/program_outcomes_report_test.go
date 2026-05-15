@@ -387,11 +387,20 @@ func (suite *ProgramOutcomesReportTestSuite) createEvent(classID uint, eventDate
 	if err != nil {
 		suite.T().Fatalf("failed to create test room: %v", err)
 	}
+	var class models.ProgramClass
+	if err := suite.env.DB.First(&class, "id = ?", classID).Error; err != nil {
+		suite.T().Fatalf("failed to find class: %v", err)
+	}
+	instructorID, err := suite.env.getOrCreateTestInstructor(class.FacilityID)
+	if err != nil {
+		suite.T().Fatalf("failed to get or create instructor: %v", err)
+	}
 	event := &models.ProgramClassEvent{
 		ClassID:        classID,
 		Duration:       "2h",
 		RecurrenceRule: rrule,
 		RoomID:         &roomID,
+		InstructorID:   &instructorID,
 	}
 	suite.env.DB.Create(event)
 	return event

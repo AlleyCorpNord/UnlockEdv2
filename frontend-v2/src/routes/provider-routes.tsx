@@ -11,6 +11,7 @@ import CourseCatalog from '@/pages/learning/CourseCatalog';
 import LearningInsights from '@/pages/insights/LearningInsights';
 import ProviderUserManagement from '@/pages/admin/ProviderUserManagement';
 import ProviderPlatformManagement from '@/pages/admin/ProviderPlatformManagement';
+import ProviderPlatformDetail from '@/pages/admin/ProviderPlatformDetail';
 
 const routes: RouteObject = declareAuthenticatedRoutes(
     [
@@ -69,6 +70,12 @@ const deptAdminRoutes: RouteObject = declareAuthenticatedRoutes(
             path: 'learning-platforms',
             handle: { title: 'Learning Platforms' },
             element: <ProviderPlatformManagement />,
+            errorElement: <Error />
+        },
+        {
+            path: 'learning-platforms/:id',
+            handle: { title: 'Learning Platform' },
+            element: <ProviderPlatformDetail />,
             errorElement: <Error />
         }
     ],
