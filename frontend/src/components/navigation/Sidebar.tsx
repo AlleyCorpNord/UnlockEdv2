@@ -14,6 +14,10 @@ import { Button } from '@/components/ui/button';
 import { useTourContext } from '@/contexts/TourContext';
 import { LogOut } from 'lucide-react';
 import {
+    isDigitalTranscriptAPath,
+    isDigitalTranscriptBPath
+} from '@/pages/student/digital-transcript/digitalTranscriptRoutes';
+import {
     HomeIcon,
     AcademicCapIcon,
     RectangleStackIcon,
@@ -26,7 +30,8 @@ import {
     ChevronDownIcon,
     ChevronRightIcon,
     ArrowPathIcon,
-    QuestionMarkCircleIcon
+    QuestionMarkCircleIcon,
+    DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -292,6 +297,22 @@ function StudentNav({ collapsed, isActive, onNavigate, onToggleHelpCenter }: Nav
                     />
                 )
             )}
+            <NavLink
+                to="/my-transcript-a"
+                icon={DocumentTextIcon}
+                label="Learning Record A"
+                active={isDigitalTranscriptAPath(location.pathname)}
+                collapsed={collapsed}
+                onClick={onNavigate}
+            />
+            <NavLink
+                to="/my-transcript"
+                icon={DocumentTextIcon}
+                label="Learning Record B"
+                active={isDigitalTranscriptBPath(location.pathname)}
+                collapsed={collapsed}
+                onClick={onNavigate}
+            />
             {hasOpen && (
                 <NavLink
                     id="visit-knowledge-center"
