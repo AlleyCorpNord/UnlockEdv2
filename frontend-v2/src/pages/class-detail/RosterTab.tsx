@@ -224,7 +224,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                             return (
                                 <div
                                     key={enrollment.id}
-                                    className="px-6 py-4 hover:bg-[#E2E7EA]/30 transition-colors"
+                                    className="px-6 py-4 hover:bg-canvas/30 transition-colors"
                                 >
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-6 flex-1">

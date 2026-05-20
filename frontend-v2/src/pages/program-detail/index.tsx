@@ -64,7 +64,7 @@ function StatCard({
     valueClassName?: string;
 }) {
     return (
-        <div className="bg-[#E2E7EA] rounded-lg p-3">
+        <div className="bg-canvas rounded-lg p-3">
             <div className="text-sm text-gray-600 mb-1">{label}</div>
             <div className={valueClassName ?? 'text-2xl text-[#203622]'}>
                 {value}
@@ -88,7 +88,7 @@ function MetricCard({
     progress?: number;
 }) {
     return (
-        <div className="p-4 bg-[#E2E7EA] rounded-lg">
+        <div className="p-4 bg-canvas rounded-lg">
             <div className="text-sm text-gray-600 mb-2">{label}</div>
             <div className="text-3xl text-[#203622] mb-2">{value}</div>
             {progress !== undefined && (
@@ -199,7 +199,7 @@ export default function ProgramDetail() {
     const totalCapacityValue = totalCapacity;
 
     return (
-        <div className="min-h-screen bg-[#E2E7EA]">
+        <div className="min-h-screen bg-canvas">
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                 <div className="flex items-start gap-6">
@@ -209,7 +209,7 @@ export default function ProgramDetail() {
                     <div className="flex-1">
                         <div className="flex items-start justify-between mb-2">
                             <div>
-                                <h1 className="text-[#203622] mb-2">
+                                <h1 className="text-[#203622] mb-2 dark:text-foreground">
                                     {program.name}
                                 </h1>
                                 <div className="flex flex-wrap gap-2 mb-3">

@@ -9,7 +9,7 @@ import MobileNav from '@/components/navigation/MobileNav';
 import Breadcrumbs from '@/components/navigation/Breadcrumbs';
 import { TitleManager } from '@/components/TitleManager';
 import UnlockEdTour from '@/components/UnlockEdTour';
-import CaptureToFigmaButton from '@/components/CaptureToFigmaButton';
+import DevCommandMenu from '@/components/dev/DevCommandMenu';
 import HelpCenter from '@/pages/HelpCenter';
 import { usePageTitle } from '@/contexts/PageTitleContext';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
@@ -17,7 +17,10 @@ import { useBreadcrumbsFromRoutes } from '@/hooks/useBreadcrumbsFromRoutes';
 import { resolveTitle } from '@/loaders/routeLoaders';
 
 import WebsocketSession from '@/session/websocket';
-import { isAnyDigitalTranscriptPath } from '@/pages/student/digital-transcript/digitalTranscriptRoutes';
+import {
+    isAnyDigitalTranscriptPath,
+    isDigitalTranscriptEntryPath
+} from '@/pages/student/digital-transcript/digitalTranscriptRoutes';
 
 function getDeepestMatchWithTitle(matches: ReturnType<typeof useMatches>) {
     return [...matches]
@@ -60,8 +63,11 @@ export default function AuthenticatedLayout() {
     const isKnowledgeCenter = location.pathname === '/knowledge-center-management' || location.pathname === '/knowledge-center';
     const isResidentKnowledgeCenter = location.pathname === '/knowledge-center';
     const isMyTranscript = isAnyDigitalTranscriptPath(location.pathname);
+    const isDigitalTranscriptEntry = isDigitalTranscriptEntryPath(location.pathname);
     const isContentViewer = location.pathname.startsWith('/viewer/');
-    const isResidentPage = ['/learning-path', '/my-courses', '/my-progress', '/resident-programs', '/home'].includes(location.pathname);
+    const isResidentPage =
+        location.pathname.startsWith('/resident-programs') ||
+        location.pathname === '/home';
     const isFullBleed =
         isProgramDetail || isResidentProfile || isResidentsPage || isClassDetail || isEventAttendance || isClassesPage || isDashboard || isProgramsList || isFacilities || isKnowledgeCenter || isContentViewer || isResidentPage || isSchedule || isMyTranscript;
     const fullBleedWrapperClass =
@@ -124,7 +130,10 @@ export default function AuthenticatedLayout() {
         isMyTranscript ||
         (isProgramDetail && canSwitchFacility(user));
     const rootClass = 'h-screen bg-background flex overflow-hidden';
-    const contentClass = `flex-1 min-h-full ${isResidentKnowledgeCenter ? 'overflow-hidden' : 'overflow-y-auto'} overflow-x-hidden ${needsGrayBg ? 'bg-[#E2E7EA]' : ''}`;
+    const transcriptSurface = 'bg-muted';
+    const contentClass = `flex-1 min-h-0 ${
+        isResidentKnowledgeCenter || isDigitalTranscriptEntry ? 'overflow-hidden' : 'overflow-y-auto'
+    } overflow-x-hidden ${needsGrayBg ? transcriptSurface : ''}`;
 
     return (
         <div className={rootClass}>
@@ -155,14 +164,26 @@ export default function AuthenticatedLayout() {
                 <TitleManager />
                 <UnlockEdTour />
 
-                <div className={`flex min-w-0 flex-1 overflow-hidden overflow-y-auto`}>
-                    <div className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${helpCenterOpen ? 'max-w-[calc(100%-20rem)]' : ''}`}>
+                <div
+                    className={`flex min-w-0 flex-1 min-h-0 ${isDigitalTranscriptEntry ? 'overflow-hidden' : 'overflow-y-auto'}`}
+                >
+                    <div
+                        className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${helpCenterOpen ? 'max-w-[calc(100%-20rem)]' : ''} ${isMyTranscript ? transcriptSurface : ''}`}
+                    >
                         <div className={contentClass}>
                             {isFullBleed ? (
                                 isClassDetail || isEventAttendance ? (
                                     <Outlet />
                                 ) : (
-                                    <div className={`${fullBleedWrapperClass} h-full`}>
+                                    <div
+                                        className={`${fullBleedWrapperClass} flex flex-1 flex-col ${
+                                            isDigitalTranscriptEntry
+                                                ? 'h-[calc(100dvh-4rem)] min-h-0 overflow-hidden'
+                                                : isMyTranscript
+                                                  ? 'min-h-[calc(100dvh-4rem)]'
+                                                  : 'h-full min-h-0'
+                                        }`}
+                                    >
                                         {showBreadcrumbs && (
                                             <div className="max-w-7xl mx-auto px-6 mb-4">
                                                 <Breadcrumbs items={breadcrumbItems} />
@@ -184,7 +205,7 @@ export default function AuthenticatedLayout() {
                         </div>
                     </div>
 
-                    <CaptureToFigmaButton />
+                    <DevCommandMenu />
 
                     {helpCenterOpen && (
                         <div className="w-80 shrink-0 bg-background border-l border-border animate-in slide-in-from-right duration-300 flex flex-col sticky top-0 h-[calc(100vh-4rem)]">

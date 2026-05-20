@@ -197,10 +197,10 @@ const getResidentLink = (user: User): string => {
     if (user.feature_access.includes(FeatureAccess.OpenContentAccess)) {
         return '/home';
     }
-    if (user.feature_access.includes(FeatureAccess.ProviderAccess)) {
-        return '/learning-path';
-    }
-    if (user.feature_access.includes(FeatureAccess.ProgramAccess)) {
+    if (
+        user.feature_access.includes(FeatureAccess.ProgramAccess) ||
+        user.feature_access.includes(FeatureAccess.ProviderAccess)
+    ) {
         return '/resident-programs';
     }
     return '/temp-home';

@@ -305,10 +305,10 @@ export default function StudentManagement() {
                     )}
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-[#203622]">
+                            <h1 className="text-[#203622] mb-2 dark:text-foreground">
                                 Residents
                             </h1>
-                            <p className="text-gray-600 mt-1">
+                            <p className="text-gray-600 dark:text-muted-foreground mt-1">
                                 Manage resident profiles and account information
                             </p>
                         </div>
@@ -860,7 +860,7 @@ export default function StudentManagement() {
                 {/* Bulk Action Bar */}
                 {selectedResidents.size > 0 && (
                     <div className="fixed bottom-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
-                    <div className="bg-[#E2E7EA] border border-gray-400 rounded-lg shadow-lg px-6 py-4 pointer-events-auto">
+                    <div className="bg-canvas border border-gray-400 rounded-lg shadow-lg px-6 py-4 pointer-events-auto">
                         <div className="flex items-center gap-6">
                             <div className="text-sm">
                                 <span className="font-semibold text-[#203622]">

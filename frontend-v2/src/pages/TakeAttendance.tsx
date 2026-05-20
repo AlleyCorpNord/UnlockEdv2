@@ -234,10 +234,10 @@ export default function TakeAttendance() {
                             Back to Class
                         </Button>
                         <div>
-                            <h1 className="text-xl font-bold">
+                            <h1 className="text-[#203622] mb-2 dark:text-foreground">
                                 Take Attendance
                             </h1>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-sm text-gray-600 dark:text-muted-foreground">
                                 {classData?.name}
                                 {date && ' - ' + formatDateDisplay(date)}
                             </p>

@@ -131,7 +131,7 @@ export default function LearningInsights() {
 
     if (isLoading) {
         return (
-            <div className="bg-muted min-h-screen p-6">
+            <div className="bg-canvas min-h-screen p-6">
                 <div className="max-w-7xl mx-auto space-y-6">
                     <Skeleton className="h-10 w-64" />
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -147,7 +147,7 @@ export default function LearningInsights() {
 
     if (error) {
         return (
-            <div className="bg-muted min-h-screen p-6">
+            <div className="bg-canvas min-h-screen p-6">
                 <div className="max-w-7xl mx-auto">
                     <div className="bg-card rounded-lg border border-border p-8 text-center">
                         <p className="text-red-600">
@@ -166,7 +166,7 @@ export default function LearningInsights() {
     const insights = layer2.data.learning_insights ?? [];
 
     return (
-        <div className="bg-muted min-h-screen p-6">
+        <div className="bg-canvas min-h-screen p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
                     <PageHeader

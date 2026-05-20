@@ -1,17 +1,20 @@
 import { ReactNode } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
     icon?: ReactNode;
     title: string;
     description?: string;
     action?: ReactNode;
+    /** Applied to the root `Card` (e.g. `h-full` for grid stretch layouts). */
+    className?: string;
 }
 
-export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+export function EmptyState({ icon, title, description, action, className }: EmptyStateProps) {
     return (
-        <Card className="bg-card">
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+        <Card className={cn('bg-card flex flex-col', className)}>
+            <CardContent className="flex flex-1 flex-col items-center justify-center py-12 text-center">
                 {icon && (
                     <div className="rounded-full bg-muted p-3 mb-4">
                         {icon}

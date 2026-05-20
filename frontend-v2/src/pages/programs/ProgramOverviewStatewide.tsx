@@ -463,17 +463,17 @@ export default function ProgramOverviewStatewide() {
     ];
 
     return (
-        <div className="flex-1 bg-[#E2E7EA]">
+        <div className="flex-1 bg-canvas">
             <div className="max-w-7xl mx-auto px-6 py-8">
                 <Breadcrumbs items={breadcrumbs} className="mb-6" />
 
                 <div className="flex items-start justify-between mb-8">
                     <div className="flex items-start gap-4">
                         <div>
-                            <h1 className="text-[#203622] mb-2">
+                            <h1 className="text-[#203622] mb-2 dark:text-foreground">
                                 {program.name}
                             </h1>
-                            <p className="text-gray-600 max-w-3xl">
+                            <p className="text-gray-600 dark:text-muted-foreground max-w-3xl">
                                 {program.description}
                             </p>
                             <div className="flex flex-wrap gap-2 mt-3">
@@ -920,7 +920,7 @@ export default function ProgramOverviewStatewide() {
                                                             stat.facilityId
                                                         );
                                                     }}
-                                                    className="gap-2 text-[#556830] hover:text-[#203622] hover:bg-[#E2E7EA] focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                                                    className="gap-2 text-[#556830] hover:text-[#203622] hover:bg-canvas focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
                                                 >
                                                     View at Facility
                                                     <ArrowRight className="size-4" />

@@ -1,8 +1,19 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useLoaderData } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth } from '@/auth/useAuth';
-import { ServerResponse, UserCoursesInfo, UserCourses, ViewType } from '@/types';
+import {
+    ActivityMapData,
+    RecentActivity,
+    ServerResponse,
+    UserCourses,
+    UserCoursesInfo,
+    ViewType
+} from '@/types';
 import EnrolledCourseCard from '@/components/student/EnrolledCourseCard';
+import { UserCoursesStatsGrid } from '@/components/student/UserCoursesStatsGrid';
+import WeeklyActivity from '@/components/dashboard/WeeklyActivity';
+import { RecentCoursesTable } from '@/components/dashboard/RecentCoursesTable';
 import { PageHeader, SearchInput, EmptyState } from '@/components/shared';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
@@ -24,8 +35,16 @@ const SORT_OPTIONS = [
     { label: 'Start Date (Newest)', value: 'order=desc&order_by=start_dt' }
 ];
 
-export default function MyCourses() {
+export default function MyCourses({
+    embedded = false
+}: {
+    embedded?: boolean;
+}) {
     const { user } = useAuth();
+    const { courses: recentCourses, week_activity } = useLoaderData() as {
+        courses: UserCourses[];
+        week_activity: ActivityMapData[];
+    };
     const [searchTerm, setSearchTerm] = useState('');
     const [sort, setSort] = useState(SORT_OPTIONS[0].value);
     const [activeTab, setActiveTab] = useState('in_progress');
@@ -43,12 +62,24 @@ export default function MyCourses() {
     const courseData = data?.data as UserCoursesInfo | undefined;
     const courses = courseData?.courses ?? [];
 
-    return (
-        <div className="bg-muted min-h-screen p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
-                <PageHeader title="My Courses" />
+    const recentActivities: RecentActivity[] = useMemo(
+        () =>
+            week_activity.map((a) => ({
+                date: a.date,
+                delta: Number(a.total_time)
+            })),
+        [week_activity]
+    );
 
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
+    const body = (
+        <div className="space-y-6">
+            {!embedded && <PageHeader title="My Courses" />}
+
+            {!isLoading && !error && courseData && (
+                <UserCoursesStatsGrid summary={courseData} />
+            )}
+
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
                     <TabsList>
                         <TabsTrigger value="in_progress">Current</TabsTrigger>
                         <TabsTrigger value="completed">Completed</TabsTrigger>
@@ -124,8 +155,8 @@ export default function MyCourses() {
                                     icon={
                                         <BookOpen className="size-6 text-muted-foreground" />
                                     }
-                                    title="No courses found"
-                                    description="Try adjusting your search or filter."
+                                    title="No courses yet"
+                                    description="You are not currently enrolled in any courses."
                                 />
                             )}
                             {!isLoading && !error && courses.length > 0 && (
@@ -150,7 +181,24 @@ export default function MyCourses() {
                         </TabsContent>
                     ))}
                 </Tabs>
-            </div>
+
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    <div className="rounded-lg border border-border bg-card p-5">
+                        <h3 className="mb-3 text-lg font-semibold text-foreground">My Activity</h3>
+                        <WeeklyActivity data={recentActivities} />
+                    </div>
+                    <RecentCoursesTable courses={recentCourses.slice(0, 5)} />
+                </div>
+        </div>
+    );
+
+    if (embedded) {
+        return body;
+    }
+
+    return (
+        <div className="bg-muted min-h-screen p-6">
+            <div className="mx-auto max-w-7xl space-y-6">{body}</div>
         </div>
     );
 }

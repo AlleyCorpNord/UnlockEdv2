@@ -24,7 +24,7 @@ export default function StudentLayer0() {
                     application features
                 </p>
                 <Button asChild variant="secondary" className="mt-2">
-                    <Link to="/my-transcript">Learning Record B</Link>
+                    <Link to="/learning-record-funnel">Learning Record</Link>
                 </Button>
             </CardContent>
         </Card>

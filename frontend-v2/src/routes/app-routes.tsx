@@ -12,7 +12,7 @@ import Error from '@/pages/Error';
 import Login from '@/pages/auth/Login';
 import ResetPassword from '@/pages/auth/ResetPassword';
 import Consent from '@/pages/auth/Consent';
-import { Navigate } from 'react-router-dom';
+import { Navigate, redirect } from 'react-router-dom';
 import StudentLayer0 from '@/pages/student/StudentLayer0';
 import DigitalTranscriptHome from '@/pages/student/digital-transcript/DigitalTranscriptHome';
 import DigitalTranscriptEntryPage from '@/pages/student/digital-transcript/DigitalTranscriptEntryPage';
@@ -99,24 +99,32 @@ const nonAdminLoggedInRoutes = declareAuthenticatedRoutes([
         handle: { title: 'UnlockEd' }
     },
     {
-        path: 'my-transcript-a',
+        path: 'learning-record-funnel',
         element: <DigitalTranscriptHome />,
-        handle: { title: 'Learning Record A' }
+        handle: { title: 'Learning Record' }
+    },
+    {
+        path: 'learning-record-funnel/entry',
+        element: <DigitalTranscriptEntryPage />,
+        handle: { title: 'Log your achievements' }
+    },
+    {
+        path: 'learning-record-categories',
+        element: <DigitalTranscriptHome />,
+        handle: { title: 'Learning Record' }
+    },
+    {
+        path: 'learning-record-categories/entry',
+        element: <DigitalTranscriptEntryPage />,
+        handle: { title: 'Log your achievements' }
+    },
+    {
+        path: 'my-transcript-a',
+        loader: () => redirect('/learning-record-funnel')
     },
     {
         path: 'my-transcript-a/entry',
-        element: <DigitalTranscriptEntryPage />,
-        handle: { title: 'Log your achievements' }
-    },
-    {
-        path: 'my-transcript',
-        element: <DigitalTranscriptHome />,
-        handle: { title: 'Learning Record B' }
-    },
-    {
-        path: 'my-transcript/entry',
-        element: <DigitalTranscriptEntryPage />,
-        handle: { title: 'Log your achievements' }
+        loader: () => redirect('/learning-record-funnel/entry')
     }
 ]);
 

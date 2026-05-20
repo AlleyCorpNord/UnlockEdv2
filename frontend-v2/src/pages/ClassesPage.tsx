@@ -224,10 +224,10 @@ export default function ClassesPage() {
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-2">
                         <div>
-                            <h1 className="text-[#203622]">
+                            <h1 className="text-[#203622] mb-2 dark:text-foreground">
                                 Classes
                             </h1>
-                            <p className="text-gray-600 mt-1">
+                            <p className="text-gray-600 dark:text-muted-foreground mt-1">
                                 Manage and monitor all classes at your facility
                             </p>
                         </div>
@@ -375,7 +375,7 @@ export default function ClassesPage() {
 
                 <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                     <table className="w-full">
-                        <thead className="bg-[#E2E7EA] border-b border-gray-200">
+                        <thead className="bg-canvas border-b border-gray-200">
                             <tr>
                                 <th className="text-left px-6 py-4 text-sm text-[#203622] w-[24%]">
                                     Class Name
@@ -491,7 +491,7 @@ export default function ClassesPage() {
                                             setFacilitySearch('');
                                             setShowCreateModal(true);
                                         }}
-                                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-[#556830] hover:bg-[#E2E7EA]/50 transition-colors"
+                                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-[#556830] hover:bg-canvas/50 transition-colors"
                                     >
                                         <div className="text-[#203622] font-medium">
                                             {facility.name}
@@ -526,7 +526,7 @@ export default function ClassesPage() {
                             (f) => f.id === selectedFacilityForClass
                         );
                         return (
-                            <div className="bg-[#E2E7EA] rounded-lg p-3 border border-[#556830] mt-4">
+                            <div className="bg-canvas rounded-lg p-3 border border-[#556830] mt-4">
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <div className="text-xs text-gray-600 mb-0.5">
@@ -579,7 +579,7 @@ export default function ClassesPage() {
                                         onClick={() =>
                                             handleProgramSelect(program.id)
                                         }
-                                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-[#556830] hover:bg-[#E2E7EA]/50 transition-colors"
+                                        className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-[#556830] hover:bg-canvas/50 transition-colors"
                                     >
                                         <div className="text-[#203622] font-medium">
                                             {program.name}
@@ -636,7 +636,7 @@ function ClassRow({
     return (
         <tr
             onClick={onClick}
-            className="hover:bg-[#E2E7EA]/50 cursor-pointer transition-colors"
+            className="hover:bg-canvas/50 cursor-pointer transition-colors"
         >
             <td className="px-6 py-4">
                 <div className="flex items-center gap-3">

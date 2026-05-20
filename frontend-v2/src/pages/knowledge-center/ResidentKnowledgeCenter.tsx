@@ -290,7 +290,7 @@ export default function ResidentKnowledgeCenter() {
                     <div className="mt-auto pt-3 border-t border-gray-100 flex items-center gap-2 overflow-hidden min-h-[2.5rem]">
                         <Badge
                             variant="secondary"
-                            className="bg-[#E2E7EA] text-gray-700 hover:bg-[#E2E7EA] text-xs shrink-0 max-w-48 truncate"
+                            className="bg-canvas text-gray-700 hover:bg-canvas text-xs shrink-0 max-w-48 truncate"
                         >
                             {item.categories[0]}
                         </Badge>
@@ -336,16 +336,17 @@ export default function ResidentKnowledgeCenter() {
 
     return (
         <div
-            className="h-full min-h-0 bg-[#E2E7EA]"
             id="knowledge-center-landing"
+            className="flex h-full min-h-0 w-full flex-col bg-[rgb(236,236,240)] dark:bg-background"
         >
-            <ScrollArea className="h-full" type="always">
-                <div className="max-w-7xl mx-auto px-6 py-8">
+            <ScrollArea className="min-h-0 flex-1" type="always">
+                <div className="min-h-full w-full">
+                    <div className="mx-auto max-w-7xl bg-muted px-6 py-8">
                     <div className="mb-8">
-                    <h1 className="text-[#203622] mb-2">
+                    <h1 className="text-[#203622] mb-2 dark:text-foreground">
                         Knowledge Center
                     </h1>
-                    <p className="text-gray-600">
+                    <p className="text-gray-600 dark:text-muted-foreground">
                         Explore libraries, videos, and helpful resources.
                     </p>
                 </div>
@@ -483,6 +484,7 @@ export default function ResidentKnowledgeCenter() {
                     />
                 </>
             )}
+                    </div>
                 </div>
             </ScrollArea>
         </div>

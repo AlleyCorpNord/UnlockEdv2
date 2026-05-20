@@ -37,7 +37,7 @@ const TAB_TRIGGER_CLASS =
 
 function LoadingSkeleton() {
     return (
-        <div className="bg-[#E2E7EA]">
+        <div className="bg-canvas">
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Skeleton className="h-8 w-32 mb-4" />
@@ -116,7 +116,7 @@ export default function ClassDetailPage() {
 
     if (!cls) {
         return (
-            <div className="bg-[#E2E7EA] flex items-center justify-center">
+            <div className="bg-canvas flex items-center justify-center">
                 <div className="bg-white rounded-lg border border-gray-200 p-8 text-center max-w-md">
                     <h2 className="text-xl font-semibold text-[#203622] mb-2">
                         Class Not Found
@@ -137,7 +137,7 @@ export default function ClassDetailPage() {
     }
 
     return (
-        <div className="bg-[#E2E7EA]">
+        <div className="bg-canvas">
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Breadcrumbs items={breadcrumbItems} />

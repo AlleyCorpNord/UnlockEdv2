@@ -376,7 +376,7 @@ export default function ProgramOverviewFacilityAdmin() {
     }
 
     return (
-        <div className="min-h-screen bg-[#E2E7EA]">
+        <div className="min-h-screen bg-canvas">
             {showFacilityContextBanner && (
                 <div className="bg-blue-50 border-b border-blue-200">
                     <div className="max-w-7xl mx-auto px-6 py-3">
@@ -422,7 +422,7 @@ export default function ProgramOverviewFacilityAdmin() {
                         <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between mb-2">
                                 <div>
-                                    <h1 className="text-[#203622] mb-2">
+                                    <h1 className="text-[#203622] mb-2 dark:text-foreground">
                                         {program.name}
                                     </h1>
                                     {program.program_types?.length > 0 && (
@@ -819,7 +819,7 @@ function MetricBox({
     valueClassName?: string;
 }) {
     return (
-        <div className="rounded-lg p-3 bg-[#E2E7EA]">
+        <div className="rounded-lg p-3 bg-canvas">
             <p className="text-sm text-gray-600 mb-1">{label}</p>
             <p className={valueClassName ?? 'text-2xl text-[#203622]'}>
                 {value}
@@ -938,7 +938,7 @@ function ClassesTab({
                                             `/program-classes/${cls.id}/detail`
                                         )
                                     }
-                                    className="hover:bg-[#E2E7EA]/50"
+                                    className="hover:bg-canvas/50"
                                     editableStatus
                                     showEnrollment
                                 />
@@ -1279,7 +1279,7 @@ function PerformanceTab({
                     Performance Metrics
                 </h3>
                 <div className="grid grid-cols-2 gap-6">
-                    <div className="bg-[#E2E7EA] rounded-lg p-4">
+                    <div className="bg-canvas rounded-lg p-4">
                         <p className="text-sm text-gray-600 mb-2">
                             Total Enrollment
                         </p>
@@ -1295,7 +1295,7 @@ function PerformanceTab({
                             {capacityPct}% of capacity
                         </p>
                     </div>
-                    <div className="bg-[#E2E7EA] rounded-lg p-4">
+                    <div className="bg-canvas rounded-lg p-4">
                         <p className="text-sm text-gray-600 mb-2">
                             Average Class Size
                         </p>
@@ -1306,7 +1306,7 @@ function PerformanceTab({
                             residents per class
                         </p>
                     </div>
-                    <div className="bg-[#E2E7EA] rounded-lg p-4">
+                    <div className="bg-canvas rounded-lg p-4">
                         <p className="text-sm text-gray-600 mb-2">
                             Active Classes
                         </p>
@@ -1317,7 +1317,7 @@ function PerformanceTab({
                             out of {totalClassCount} total
                         </p>
                     </div>
-                    <div className="bg-[#E2E7EA] rounded-lg p-4">
+                    <div className="bg-canvas rounded-lg p-4">
                         <p className="text-sm text-gray-600 mb-2">
                             Completion Rate
                         </p>

@@ -147,7 +147,7 @@ export function TakeAttendanceModal({
 
                 <div className="space-y-4 mt-4">
                     {todaySession && (
-                        <div className="bg-[#E2E7EA] rounded-lg p-4 border-2 border-[#556830]">
+                        <div className="bg-canvas rounded-lg p-4 border-2 border-[#556830]">
                             <div className="flex items-center gap-2 mb-2">
                                 <Calendar className="size-5 text-[#556830]" />
                                 <span className="font-semibold text-[#203622]">
@@ -207,7 +207,7 @@ export function TakeAttendanceModal({
                                         }
                                         className={`w-full text-left p-3 rounded-lg border transition-colors ${
                                             session.hasAttendance
-                                                ? 'border-gray-200 hover:border-[#556830] hover:bg-[#E2E7EA]/30'
+                                                ? 'border-gray-200 hover:border-[#556830] hover:bg-canvas/30'
                                                 : 'border-amber-200 bg-amber-50/30 hover:border-amber-400 hover:bg-amber-50'
                                         }`}
                                     >

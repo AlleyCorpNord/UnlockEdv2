@@ -1,416 +1,380 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
-import type { TranscriptDraft } from '@/types/digital-transcript';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Plus } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { ConfirmDialog } from '@/components/shared';
+import type { TranscriptEntry } from '@/types/digital-transcript';
 import {
-    DigitalTranscriptBackLink,
-    dtTitle
-} from './DigitalTranscriptShell';
-import { TranscriptResumePreview } from './TranscriptResumePreview';
+    cloneTranscriptEntry,
+    createEmptyTranscriptEntry,
+    dispatchEntrySessionUpdated,
+    entryHasExportableContent,
+    filterEntriesForExport,
+    readTranscriptEntriesFromStorage,
+    resolveInitialEntrySession,
+    sortEntriesNewestFirst,
+    syncSessionRowsAfterUpsert,
+    writeEntrySessionToStorage
+} from '@/pages/student/digital-transcript/transcriptEntrySessionStorage';
+import type { TranscriptEntrySession } from '@/types/digital-transcript';
+import { AchievementsRecordPreview } from './AchievementsRecordPreview';
+import { AchievementRow } from './AchievementRow';
+import type { LearningRecordFormVariant } from './learningRecordPrototypes';
+import { TOP_SKILLS_MAX } from './transcriptReflectionConfig';
 
-type SaveStatus = 'idle' | 'saving' | 'saved';
+/** Newest uncommitted row with no answers yet — safe to reopen instead of duplicating. */
+function findReusableBlankDraftRow(
+    rows: TranscriptEntry[],
+    committedIds: Set<string>
+): TranscriptEntry | null {
+    for (const row of sortEntriesNewestFirst(rows)) {
+        if (committedIds.has(row.id)) continue;
+        if (!entryHasExportableContent(row)) return row;
+    }
+    return null;
+}
+
+function ensureDraftEditorOpen(
+    session: TranscriptEntrySession,
+    committed: TranscriptEntry[]
+): TranscriptEntrySession {
+    const committedIds = new Set(committed.map((e) => e.id));
+    const reusable = findReusableBlankDraftRow(session.rows, committedIds);
+    if (reusable) {
+        return {
+            ...session,
+            expandedId: reusable.id,
+            lastPreviewId: reusable.id
+        };
+    }
+    const row = createEmptyTranscriptEntry();
+    return {
+        ...session,
+        rows: [row, ...session.rows],
+        expandedId: row.id,
+        lastPreviewId: row.id
+    };
+}
 
 interface DigitalTranscriptWysiwygEntryProps {
     base: string;
-    draft: TranscriptDraft;
-    updateDraft: (patch: Partial<TranscriptDraft>) => void;
-    persistDraftNow: () => void;
-    completeEntry: (source: TranscriptDraft) => void;
+    formVariant: LearningRecordFormVariant;
+    hydrated: boolean;
+    entries: TranscriptEntry[];
+    upsertCommittedEntry: (entry: TranscriptEntry) => void;
+    deleteCommittedEntry: (id: string) => TranscriptEntrySession | null;
+    /** Live session rows for PDF export (includes in-progress autosaved work). */
+    onExportRowsChange?: (rows: TranscriptEntry[]) => void;
 }
 
 export function DigitalTranscriptWysiwygEntry({
-    base,
-    draft,
-    updateDraft,
-    persistDraftNow,
-    completeEntry
+    base: _base,
+    formVariant,
+    hydrated,
+    entries,
+    upsertCommittedEntry,
+    deleteCommittedEntry,
+    onExportRowsChange
 }: DigitalTranscriptWysiwygEntryProps) {
-    const navigate = useNavigate();
-    const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-    const [showDoneErrors, setShowDoneErrors] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [session, setSession] = useState<TranscriptEntrySession | null>(null);
+    const [doneErrorRowId, setDoneErrorRowId] = useState<string | null>(null);
+    const [deleteConfirmFor, setDeleteConfirmFor] = useState<TranscriptEntry | null>(null);
+    const baselinesRef = useRef<Record<string, TranscriptEntry>>({});
+    const prevExpandedIdRef = useRef<string | null>(null);
+    const achievementListRef = useRef<HTMLDivElement>(null);
+    const sessionRef = useRef<TranscriptEntrySession | null>(null);
+    sessionRef.current = session;
 
-    const skipSaveStatusEffect = useRef(true);
+    const committedIds = useMemo(() => new Set(entries.map((e) => e.id)), [entries]);
+
+    const captureBaseline = useCallback((id: string, rows: TranscriptEntry[]) => {
+        const row = rows.find((r) => r.id === id);
+        if (row) baselinesRef.current[id] = cloneTranscriptEntry(row);
+    }, []);
+
+    const bootstrapped = useRef(false);
+
     useEffect(() => {
-        if (skipSaveStatusEffect.current) {
-            skipSaveStatusEffect.current = false;
+        if (!hydrated || bootstrapped.current) return;
+        bootstrapped.current = true;
+
+        const edit = searchParams.get('edit');
+        const intent = searchParams.get('intent') === 'new';
+
+        let s = resolveInitialEntrySession();
+        const committed = readTranscriptEntriesFromStorage();
+
+        if (intent) {
+            s = ensureDraftEditorOpen(s, committed);
+        } else if (edit && s.rows.some((r) => r.id === edit)) {
+            s = { ...s, expandedId: edit, lastPreviewId: edit };
+        } else if (s.rows.length === 0) {
+            s = ensureDraftEditorOpen(s, committed);
+        }
+
+        if (edit || intent) {
+            setSearchParams(
+                (prev) => {
+                    const next = new URLSearchParams(prev);
+                    next.delete('edit');
+                    next.delete('intent');
+                    return next;
+                },
+                { replace: true }
+            );
+        }
+
+        setSession(s);
+        writeEntrySessionToStorage(s);
+        dispatchEntrySessionUpdated();
+
+        if (s.expandedId) {
+            captureBaseline(s.expandedId, s.rows);
+            prevExpandedIdRef.current = s.expandedId;
+        }
+    }, [hydrated, searchParams, setSearchParams, captureBaseline]);
+
+    useEffect(() => {
+        if (!session) return;
+        const id = session.expandedId;
+        if (id === prevExpandedIdRef.current) return;
+        prevExpandedIdRef.current = id;
+        if (id) captureBaseline(id, session.rows);
+    }, [session, session?.expandedId, captureBaseline]);
+
+    useEffect(() => {
+        if (!session) return;
+        const t = window.setTimeout(() => {
+            writeEntrySessionToStorage(session);
+            dispatchEntrySessionUpdated();
+        }, 400);
+        return () => window.clearTimeout(t);
+    }, [session]);
+
+    useEffect(() => {
+        if (!session) {
+            onExportRowsChange?.([]);
             return;
         }
-        setSaveStatus('saving');
-        const toSaved = window.setTimeout(() => setSaveStatus('saved'), 450);
-        const toIdle = window.setTimeout(() => setSaveStatus('idle'), 3200);
-        return () => {
-            window.clearTimeout(toSaved);
-            window.clearTimeout(toIdle);
-        };
-    }, [draft.updatedAt]);
+        onExportRowsChange?.(filterEntriesForExport(session.rows));
+    }, [session, onExportRowsChange]);
 
-    const programOk = Boolean(draft.programName.trim());
-    const dateOk = Boolean(draft.completionDate.trim());
+    const patchRow = useCallback((id: string, patch: Partial<TranscriptEntry>) => {
+        setSession((prev) => {
+            if (!prev) return prev;
+            const rows = prev.rows.map((r) => {
+                if (r.id !== id) return r;
+                const nextTop = patch.topSkills ?? r.topSkills;
+                return { ...r, ...patch, topSkills: nextTop };
+            });
+            const lastPreviewId = prev.expandedId === id ? id : prev.lastPreviewId;
+            return { ...prev, rows, lastPreviewId };
+        });
+    }, []);
 
-    function handleDone() {
-        if (!programOk || !dateOk) {
-            setShowDoneErrors(true);
-            return;
-        }
-        setShowDoneErrors(false);
-        persistDraftNow();
-        completeEntry(draft);
-        navigate(base);
+    const handleToggleExpand = useCallback((id: string) => {
+        setSession((prev) => {
+            if (!prev) return prev;
+            if (prev.expandedId === id) {
+                return { ...prev, expandedId: null };
+            }
+            return { ...prev, expandedId: id, lastPreviewId: id };
+        });
+        setDoneErrorRowId(null);
+    }, []);
+
+    const handleAdd = useCallback(() => {
+        const row = createEmptyTranscriptEntry();
+        setSession((prev) => {
+            if (!prev) return prev;
+            return {
+                ...prev,
+                rows: [row, ...prev.rows],
+                expandedId: row.id,
+                lastPreviewId: row.id
+            };
+        });
+        setDoneErrorRowId(null);
+    }, []);
+
+    const isCommittedEntryId = useCallback((id: string) => {
+        return readTranscriptEntriesFromStorage().some((e) => e.id === id);
+    }, []);
+
+    const handleCancel = useCallback(
+        (id: string) => {
+            const baseline = baselinesRef.current[id];
+            setDoneErrorRowId(null);
+            setSession((prev) => {
+                if (!prev) return prev;
+                const committed = isCommittedEntryId(id);
+                const current = prev.rows.find((r) => r.id === id);
+                const restored = baseline ? cloneTranscriptEntry(baseline) : current ?? null;
+                if (!restored) {
+                    return { ...prev, expandedId: null };
+                }
+                let rows = prev.rows.map((r) => (r.id === id ? restored : r));
+                if (!committed && !entryHasExportableContent(restored)) {
+                    rows = rows.filter((r) => r.id !== id);
+                }
+                const lastPreviewId =
+                    rows.length > 0 ? rows[rows.length - 1].id : null;
+                return {
+                    ...prev,
+                    rows,
+                    expandedId: null,
+                    lastPreviewId
+                };
+            });
+        },
+        [isCommittedEntryId]
+    );
+
+    const handleDone = useCallback(
+        (id: string) => {
+            const row = sessionRef.current?.rows.find((r) => r.id === id);
+            if (!row) return;
+            const programOk = Boolean(row.programName.trim());
+            const dateOk = Boolean(row.completionDate.trim());
+            if (!programOk || !dateOk) {
+                setDoneErrorRowId(id);
+                return;
+            }
+            setDoneErrorRowId(null);
+            const saved: TranscriptEntry = {
+                ...row,
+                topSkills: row.topSkills.slice(0, TOP_SKILLS_MAX)
+            };
+            upsertCommittedEntry(saved);
+            setSession((prev) => {
+                if (!prev) return prev;
+                const next = syncSessionRowsAfterUpsert(prev, saved);
+                return { ...next, expandedId: null };
+            });
+            baselinesRef.current[id] = cloneTranscriptEntry(saved);
+        },
+        [upsertCommittedEntry]
+    );
+
+    const displayRows = useMemo(
+        () => (session ? sortEntriesNewestFirst(session.rows) : []),
+        [session]
+    );
+
+    const expandedId = session?.expandedId ?? null;
+
+    useLayoutEffect(() => {
+        if (!expandedId || !achievementListRef.current) return;
+        const row = achievementListRef.current.querySelector<HTMLElement>(
+            `[data-achievement-id="${expandedId}"]`
+        );
+        row?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, [expandedId, displayRows.length]);
+
+    if (!hydrated || !session) {
+        return (
+            <div
+                data-slot="transcript-wysiwyg-outer"
+                className="flex h-full min-h-0 w-full flex-1 flex-col items-center justify-center gap-3 text-muted-foreground"
+            >
+                <div
+                    className="size-8 rounded-full border-2 border-primary/25 border-t-primary animate-spin"
+                    aria-hidden
+                />
+                <p className="text-sm font-medium">Loading your editor…</p>
+            </div>
+        );
     }
 
     return (
         <div
             data-slot="transcript-wysiwyg-outer"
-            className="flex w-full flex-col min-h-[calc(100dvh-8rem)] lg:h-[calc(100dvh-8rem)] lg:max-h-[calc(100dvh-8rem)] lg:min-h-0 lg:overflow-hidden"
+            className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden"
         >
+            {/*
+              Scroll contract:
+              - Editor pane: header fixed; `transcript-achievement-list` scrolls vertically.
+              - Preview pane: `achievements-record-preview-scroll` scrolls vertically.
+              - Layout chain uses min-h-0 + overflow-hidden so panes do not share one page scroll.
+            */}
             <div
                 data-slot="transcript-wysiwyg-layout"
-                className="flex min-h-0 w-full flex-1 flex-col overflow-hidden lg:flex-row lg:items-stretch"
+                className="grid h-full min-h-0 w-full min-w-0 flex-1 grid-cols-1 overflow-hidden bg-muted max-[899px]:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] min-[900px]:grid-cols-[5fr_7fr] min-[900px]:grid-rows-[minmax(0,1fr)] [&>*]:min-h-0"
             >
-            {/* Left: editor workspace (reference — light form surface) */}
-            <aside
-                data-slot="transcript-wysiwyg-editor-pane"
-                className="flex min-h-0 w-full flex-col overflow-hidden border-b border-border bg-white dark:border-border dark:bg-card lg:h-full lg:max-w-md lg:flex-[0_0_min(28rem,42vw)] lg:border-b-0 lg:border-r xl:max-w-lg"
-            >
-                <div className="shrink-0 border-b border-gray-100 bg-white px-5 py-4 sm:px-6 dark:border-border dark:bg-card">
-                    <DigitalTranscriptBackLink to={base}>Back</DigitalTranscriptBackLink>
-                    <div className="mt-4 space-y-1">
-                        <h1
-                            className={cn(
-                                'text-balance text-2xl font-semibold tracking-tight sm:text-3xl',
-                                dtTitle
-                            )}
-                        >
-                            Your record
+                <aside
+                    data-slot="transcript-wysiwyg-editor-pane"
+                    className="m-2 grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-lg border border-border/80 bg-background shadow-sm print:hidden"
+                >
+                    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 px-4 py-4">
+                        <h1 className="text-base font-semibold tracking-tight text-foreground">
+                            Your achievements
                         </h1>
-                        <p className="max-w-prose pt-1 text-sm leading-relaxed text-muted-foreground">
-                            Edit on the left—your card updates on the right. Nothing is saved to your list until
-                            you tap Done.
-                        </p>
+                        <button
+                            type="button"
+                            data-slot="transcript-add-achievement"
+                            onClick={handleAdd}
+                            className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-[#556830] transition-colors duration-150 hover:text-[#203622] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        >
+                            <Plus className="size-4" aria-hidden />
+                            Add achievement
+                        </button>
                     </div>
-                </div>
+
+                    <div
+                        ref={achievementListRef}
+                        data-slot="transcript-achievement-list"
+                        className="min-h-0 overflow-y-auto overscroll-contain bg-background p-2"
+                    >
+                        <div className="flex flex-col gap-2.5">
+                            {displayRows.map((entry) => (
+                                <AchievementRow
+                                    key={entry.id}
+                                    formVariant={formVariant}
+                                    entry={entry}
+                                    isExpanded={session.expandedId === entry.id}
+                                    onToggleExpand={() => handleToggleExpand(entry.id)}
+                                    onPatch={(patch) => patchRow(entry.id, patch)}
+                                    onCancel={() => handleCancel(entry.id)}
+                                    onDone={() => handleDone(entry.id)}
+                                    showDoneErrors={doneErrorRowId === entry.id}
+                                    showDelete={committedIds.has(entry.id)}
+                                    onDeleteRequest={() => setDeleteConfirmFor(entry)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </aside>
 
                 <div
-                    data-slot="transcript-wysiwyg-controls"
-                    className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-6 sm:px-6"
+                    data-slot="transcript-wysiwyg-preview-pane"
+                    className="m-2 flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-border/80 bg-background shadow-sm max-[899px]:min-h-0"
+                    aria-label="Live preview"
                 >
-                    <div className="mx-auto max-w-xl space-y-8 pb-8">
-                        <section className="space-y-4">
-                            <h2 className={`text-xs font-semibold uppercase tracking-[0.14em] ${dtTitle}`}>
-                                Basics
-                            </h2>
-                            <div className="space-y-2">
-                                <Label htmlFor="wysiwyg-programName">Program or course name</Label>
-                                <Input
-                                    id="wysiwyg-programName"
-                                    data-slot="transcript-program-name"
-                                    value={draft.programName}
-                                    onChange={(e) => updateDraft({ programName: e.target.value })}
-                                    placeholder="e.g. GED prep, welding fundamentals"
-                                    aria-invalid={showDoneErrors && !programOk}
-                                />
-                                {showDoneErrors && !programOk && (
-                                    <p className="text-sm text-destructive" role="alert">
-                                        Add a program or course name to continue.
-                                    </p>
-                                )}
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="wysiwyg-completionDate">Completion date</Label>
-                                <Input
-                                    id="wysiwyg-completionDate"
-                                    type="date"
-                                    data-slot="transcript-completion-date"
-                                    value={draft.completionDate}
-                                    onChange={(e) => updateDraft({ completionDate: e.target.value })}
-                                    aria-invalid={showDoneErrors && !dateOk}
-                                />
-                                {showDoneErrors && !dateOk && (
-                                    <p className="text-sm text-destructive" role="alert">
-                                        Add a completion date to continue.
-                                    </p>
-                                )}
-                            </div>
-                        </section>
-
-                        <section className="space-y-4">
-                            <h2 className={`text-xs font-semibold uppercase tracking-[0.14em] ${dtTitle}`}>
-                                How this program felt for you
-                            </h2>
-                            <p className="text-sm text-muted-foreground">
-                                How confident do you feel about your future since completing this program?
-                            </p>
-                            <RadioGroup
-                                value={draft.confidence}
-                                onValueChange={(v) => updateDraft({ confidence: v })}
-                                className="grid gap-2"
-                            >
-                                {(
-                                    [
-                                        ['1', 'Not at all confident'],
-                                        ['2', 'A little confident'],
-                                        ['3', 'Somewhat confident'],
-                                        ['4', 'Quite confident'],
-                                        ['5', 'Very confident']
-                                    ] as const
-                                ).map(([val, label]) => (
-                                    <div
-                                        key={val}
-                                        className="flex w-full items-center gap-3 rounded-lg border border-gray-200 bg-gray-50/50 px-3 py-2.5 transition-colors hover:border-[#556830]/40 dark:border-border dark:bg-muted/20 dark:hover:border-primary/40"
-                                    >
-                                        <Label
-                                            htmlFor={`wysiwyg-conf-${val}`}
-                                            className="min-w-0 flex-1 cursor-pointer text-sm font-normal leading-snug"
-                                        >
-                                            {label}
-                                        </Label>
-                                        <RadioGroupItem
-                                            value={val}
-                                            id={`wysiwyg-conf-${val}`}
-                                            indicator="checkbox"
-                                        />
-                                    </div>
-                                ))}
-                            </RadioGroup>
-                        </section>
-
-                        <WysiwygTextarea
-                            id="wysiwyg-oneSentence"
-                            label="In one sentence"
-                            value={draft.oneSentence}
-                            onChange={(v) => updateDraft({ oneSentence: v })}
-                        />
-                        <WysiwygCommaTagField
-                            id="wysiwyg-skillKnowledge"
-                            label="New skill or knowledge"
-                            value={draft.skillKnowledge}
-                            onChange={(v) => updateDraft({ skillKnowledge: v })}
-                        />
-                        <WysiwygTextarea
-                            id="wysiwyg-goalConnection"
-                            label="Connection to your goals"
-                            value={draft.goalConnection}
-                            onChange={(v) => updateDraft({ goalConnection: v })}
-                        />
-                        <WysiwygTextarea
-                            id="wysiwyg-pride"
-                            label="Why you are proud"
-                            value={draft.pride}
-                            onChange={(v) => updateDraft({ pride: v })}
-                        />
-                        <WysiwygTextarea
-                            id="wysiwyg-standoutMoment"
-                            label="A moment or someone that stood out"
-                            value={draft.standoutMoment}
-                            onChange={(v) => updateDraft({ standoutMoment: v })}
-                        />
-                        <WysiwygTextarea
-                            id="wysiwyg-adviceToPeer"
-                            label="What you would tell another resident"
-                            value={draft.adviceToPeer}
-                            onChange={(v) => updateDraft({ adviceToPeer: v })}
-                        />
-
-                        <div className="flex flex-col-reverse gap-3 border-t border-gray-100 pt-6 dark:border-border sm:flex-row sm:justify-end">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => {
-                                    persistDraftNow();
-                                    navigate(base);
-                                }}
-                            >
-                                Cancel
-                            </Button>
-                            <Button type="button" data-slot="transcript-done" onClick={handleDone}>
-                                Done
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </aside>
-
-            {/* Right: preview canvas (reference — cool grey chrome, document on “paper”) */}
-            <div
-                data-slot="transcript-wysiwyg-preview-pane"
-                className="flex min-h-[min(52vh,28rem)] flex-1 flex-col overflow-hidden bg-[#c4ccd6] dark:bg-slate-950 lg:min-h-0 lg:h-full lg:flex-1"
-            >
-                <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-400/30 bg-[#b6c0cd] px-[40px] py-2.5 dark:border-slate-700 dark:bg-slate-900">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">
-                        Preview
-                    </span>
-                    <span className="rounded-full bg-white/60 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                        Live
-                    </span>
-                </div>
-
-                <div className="relative flex min-h-0 flex-1 flex-col">
-                    <div className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto overscroll-contain p-[40px] lg:min-h-0 lg:overflow-y-auto">
-                        <div className="w-full max-w-none">
-                            <TranscriptResumePreview
-                                source={draft}
-                                className="max-w-none shadow-[0_1px_2px_rgba(15,23,42,0.05)] ring-1 ring-slate-900/[0.04] dark:shadow-[0_1px_2px_rgba(0,0,0,0.18)] dark:ring-white/[0.06]"
-                            />
-                        </div>
-                    </div>
-
-                    <footer className="flex shrink-0 items-center justify-between gap-4 border-t border-slate-400/25 bg-[#aeb8c7]/95 px-[40px] py-2.5 dark:border-slate-700 dark:bg-slate-900/95">
-                        <p
-                            data-slot="transcript-autosave-status"
-                            className="text-xs font-medium text-slate-700 dark:text-slate-300"
-                            aria-live="polite"
-                        >
-                            {saveStatus === 'saving' && 'Saving…'}
-                            {saveStatus === 'saved' && 'Saved'}
-                            {saveStatus === 'idle' && (
-                                <span className="text-slate-500 dark:text-slate-500">&nbsp;</span>
-                            )}
-                        </p>
-                        <span
-                            className="text-[11px] font-medium tabular-nums text-slate-600 dark:text-slate-400"
-                            aria-hidden
-                        >
-                            1 / 1
-                        </span>
-                    </footer>
+                    <AchievementsRecordPreview rows={session.rows} anchorId={session.expandedId} />
                 </div>
             </div>
-        </div>
-        </div>
-    );
-}
-
-interface WysiwygCommaTagFieldProps {
-    id: string;
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-}
-
-function parseCommaTags(raw: string): string[] {
-    return raw
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean);
-}
-
-function joinCommaTags(tags: string[]): string {
-    return tags.join(', ');
-}
-
-function WysiwygCommaTagField({ id, label, value, onChange }: WysiwygCommaTagFieldProps) {
-    const slot = id.replace('wysiwyg-', 'transcript-');
-    const tags = useMemo(() => parseCommaTags(value), [value]);
-    const [input, setInput] = useState('');
-
-    const commit = useCallback(
-        (next: string[]) => {
-            onChange(joinCommaTags(next));
-        },
-        [onChange]
-    );
-
-    const addTokens = useCallback(
-        (raw: string) => {
-            const extra = parseCommaTags(raw);
-            if (extra.length === 0) return;
-            commit([...tags, ...extra]);
-            setInput('');
-        },
-        [tags, commit]
-    );
-
-    function removeAt(index: number) {
-        commit(tags.filter((_, i) => i !== index));
-    }
-
-    function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-        if (e.key === 'Enter' || e.key === ',') {
-            e.preventDefault();
-            addTokens(input);
-            return;
-        }
-        if (e.key === 'Backspace' && input === '' && tags.length > 0) {
-            e.preventDefault();
-            removeAt(tags.length - 1);
-        }
-    }
-
-    function handleBlur() {
-        if (input.trim()) addTokens(input);
-    }
-
-    return (
-        <div className="space-y-2" data-slot={slot}>
-            <Label htmlFor={id}>{label}</Label>
-            <p id={`${id}-hint`} className="text-xs text-muted-foreground">
-                Separate items with commas, or press Enter after each one.
-            </p>
-            <div
-                data-slot={`${slot}-tags`}
-                className="flex min-h-[6.5rem] flex-col gap-2 rounded-md border border-gray-200 bg-white p-2 dark:border-input dark:bg-background"
-            >
-                <div className="flex flex-wrap gap-1.5" role="list">
-                    {tags.map((tag, i) => (
-                        <Badge
-                            key={`${i}-${tag}`}
-                            variant="secondary"
-                            className="max-w-full gap-1 px-2 py-1 text-xs font-normal"
-                            role="listitem"
-                        >
-                            <span className="max-w-[14rem] truncate">{tag}</span>
-                            <button
-                                type="button"
-                                className="-mr-0.5 rounded-sm p-0.5 text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                                onClick={() => removeAt(i)}
-                                aria-label={`Remove ${tag}`}
-                            >
-                                <X className="size-3.5 shrink-0" aria-hidden />
-                            </button>
-                        </Badge>
-                    ))}
-                </div>
-                <Input
-                    id={id}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    onBlur={handleBlur}
-                    placeholder="Add an item…"
-                    aria-describedby={`${id}-hint`}
-                    className="h-9 border-0 bg-transparent px-1 shadow-none focus-visible:ring-0"
-                />
-            </div>
-        </div>
-    );
-}
-
-interface WysiwygTextareaProps {
-    id: string;
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-}
-
-function WysiwygTextarea({ id, label, value, onChange }: WysiwygTextareaProps) {
-    const slot = id.replace('wysiwyg-', 'transcript-');
-    return (
-        <div className="space-y-2">
-            <Label htmlFor={id}>{label}</Label>
-            <Textarea
-                id={id}
-                data-slot={slot}
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                rows={4}
-                className="min-h-24 resize-y border-gray-200 bg-white dark:border-input dark:bg-background"
+            <ConfirmDialog
+                open={deleteConfirmFor !== null}
+                onOpenChange={(open) => {
+                    if (!open) setDeleteConfirmFor(null);
+                }}
+                title="Remove this achievement?"
+                description={
+                    deleteConfirmFor
+                        ? `“${deleteConfirmFor.programName.trim() || 'Untitled'}” will be removed from this device. This cannot be undone.`
+                        : ''
+                }
+                confirmLabel="Delete"
+                cancelLabel="Cancel"
+                variant="destructive"
+                onConfirm={() => {
+                    const target = deleteConfirmFor;
+                    setDeleteConfirmFor(null);
+                    if (!target) return;
+                    delete baselinesRef.current[target.id];
+                    const next = deleteCommittedEntry(target.id);
+                    setSession(next ?? resolveInitialEntrySession());
+                }}
             />
         </div>
     );

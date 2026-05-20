@@ -254,10 +254,10 @@ const isDepAdmin = user ? isDeptAdmin(user) : false;
                 {/* Page Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl text-[#203622] mb-2">
+                        <h1 className="text-[#203622] mb-2 dark:text-foreground">
                             {class_id ? 'Class Schedule' : 'Schedule'}
                         </h1>
-                        <p className="text-gray-600">{subtitle}</p>
+                        <p className="text-gray-600 dark:text-muted-foreground">{subtitle}</p>
                     </div>
                     {class_id && (
                         <label className="flex items-center gap-2 text-sm cursor-pointer">

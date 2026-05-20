@@ -1,15 +1,74 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { TOP_SKILLS_MAX } from '@/pages/student/digital-transcript/transcriptReflectionConfig';
+import {
+    deleteTranscriptEntryById,
+    dispatchEntrySessionUpdated,
+    entrySessionIsDirty,
+    readEntrySessionFromStorage,
+    readTranscriptEntriesFromStorage,
+    writeTranscriptEntriesToStorage
+} from '@/pages/student/digital-transcript/transcriptEntrySessionStorage';
 import {
     getDigitalTranscriptStorageKeys,
     migrateDigitalTranscriptLegacyStorage,
-    type DigitalTranscriptVariant,
     type TranscriptDraft,
     type TranscriptEntry,
-    TRANSCRIPT_STEP_COUNT
+    type TranscriptEntrySession
 } from '@/types/digital-transcript';
 
 function newId() {
     return crypto.randomUUID();
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+    return typeof v === 'object' && v !== null;
+}
+
+function strField(v: unknown): string {
+    return typeof v === 'string' ? v : '';
+}
+
+/** Normalize tags from persisted JSON; migrate legacy `skillKnowledge` string to a single tag. */
+function normalizeTopSkills(parsed: Record<string, unknown>): string[] {
+    const raw = parsed.topSkills;
+    if (Array.isArray(raw)) {
+        return raw
+            .filter((x): x is string => typeof x === 'string')
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .slice(0, TOP_SKILLS_MAX);
+    }
+    const legacy = parsed.skillKnowledge;
+    if (typeof legacy === 'string' && legacy.trim()) {
+        return [legacy.trim()].slice(0, TOP_SKILLS_MAX);
+    }
+    return [];
+}
+
+/** Merge persisted JSON with current defaults so new keys never read as undefined. */
+function normalizeTranscriptDraft(parsed: Record<string, unknown>): TranscriptDraft {
+    const d = parsed as Partial<TranscriptDraft>;
+    const empty = createEmptyDraft();
+    return {
+        id: strField(d.id) || empty.id,
+        updatedAt: strField(d.updatedAt) || empty.updatedAt,
+        stepIndex: typeof d.stepIndex === 'number' ? d.stepIndex : 0,
+        uiPhase: d.uiPhase === 'preview' || d.uiPhase === 'survey' ? d.uiPhase : 'survey',
+        programName: strField(d.programName),
+        completionDate: strField(d.completionDate),
+        confidence: strField(d.confidence),
+        oneSentence: strField(d.oneSentence),
+        topSkills: normalizeTopSkills(parsed),
+        whatMadeYouFinish: strField(d.whatMadeYouFinish),
+        goalConnection: strField(d.goalConnection),
+        pride: strField(d.pride),
+        standoutMoment: strField(d.standoutMoment),
+        adviceToPeer: strField(d.adviceToPeer),
+        editingEntryId:
+            typeof d.editingEntryId === 'string' && d.editingEntryId.trim()
+                ? d.editingEntryId.trim()
+                : undefined
+    };
 }
 
 export function createEmptyDraft(): TranscriptDraft {
@@ -23,79 +82,71 @@ export function createEmptyDraft(): TranscriptDraft {
         completionDate: '',
         confidence: '',
         oneSentence: '',
-        skillKnowledge: '',
+        topSkills: [],
+        whatMadeYouFinish: '',
         goalConnection: '',
         pride: '',
         standoutMoment: '',
-        adviceToPeer: ''
+        adviceToPeer: '',
+        editingEntryId: undefined
     };
 }
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-    return typeof v === 'object' && v !== null;
-}
-
-function readDraft(variant: DigitalTranscriptVariant): TranscriptDraft | null {
+function readDraft(): TranscriptDraft | null {
     try {
-        const raw = localStorage.getItem(getDigitalTranscriptStorageKeys(variant).draft);
+        const raw = localStorage.getItem(getDigitalTranscriptStorageKeys().draft);
         if (!raw) return null;
         const parsed: unknown = JSON.parse(raw);
         if (!isRecord(parsed) || typeof parsed.id !== 'string') return null;
-        return parsed as unknown as TranscriptDraft;
+        return normalizeTranscriptDraft(parsed);
     } catch {
         return null;
     }
 }
 
-function readEntries(variant: DigitalTranscriptVariant): TranscriptEntry[] {
-    try {
-        const raw = localStorage.getItem(getDigitalTranscriptStorageKeys(variant).entries);
-        if (!raw) return [];
-        const parsed = JSON.parse(raw) as unknown;
-        if (!Array.isArray(parsed)) return [];
-        return parsed.filter((e: unknown): e is TranscriptEntry => {
-            if (!isRecord(e)) return false;
-            return typeof e.id === 'string' && typeof e.programName === 'string';
-        });
-    } catch {
-        return [];
-    }
+function readEntries(): TranscriptEntry[] {
+    return readTranscriptEntriesFromStorage();
 }
 
-function writeDraftToStorage(d: TranscriptDraft, variant: DigitalTranscriptVariant) {
+function writeDraftToStorage(d: TranscriptDraft) {
     const next = { ...d, updatedAt: new Date().toISOString() };
-    localStorage.setItem(getDigitalTranscriptStorageKeys(variant).draft, JSON.stringify(next));
+    localStorage.setItem(getDigitalTranscriptStorageKeys().draft, JSON.stringify(next));
 }
 
-function writeEntriesToStorage(list: TranscriptEntry[], variant: DigitalTranscriptVariant) {
-    localStorage.setItem(getDigitalTranscriptStorageKeys(variant).entries, JSON.stringify(list));
+function writeEntriesToStorage(list: TranscriptEntry[]) {
+    writeTranscriptEntriesToStorage(list);
 }
 
-function removeDraftFromStorage(variant: DigitalTranscriptVariant) {
-    localStorage.removeItem(getDigitalTranscriptStorageKeys(variant).draft);
+function removeDraftFromStorage() {
+    localStorage.removeItem(getDigitalTranscriptStorageKeys().draft);
 }
 
 const AUTOSAVE_MS = 400;
 
-export interface UseTranscriptDraftOptions {
-    variant: DigitalTranscriptVariant;
-}
+const ENTRY_SESSION_EVENT = 'transcript-entry-session-updated';
 
-export function useTranscriptDraft({ variant }: UseTranscriptDraftOptions) {
+export function useTranscriptDraft() {
     const [draft, setDraft] = useState<TranscriptDraft | null>(null);
     const [entries, setEntries] = useState<TranscriptEntry[]>([]);
     const [hydrated, setHydrated] = useState(false);
+    const [entrySessionEpoch, setEntrySessionEpoch] = useState(0);
     const skipPersistRef = useRef(true);
     const draftRef = useRef<TranscriptDraft | null>(null);
     draftRef.current = draft;
 
     useEffect(() => {
         migrateDigitalTranscriptLegacyStorage();
-        setDraft(readDraft(variant));
-        setEntries(readEntries(variant));
+        setDraft(readDraft());
+        setEntries(readEntries());
         setHydrated(true);
         skipPersistRef.current = true;
-    }, [variant]);
+    }, []);
+
+    useEffect(() => {
+        const bump = () => setEntrySessionEpoch((n) => n + 1);
+        window.addEventListener(ENTRY_SESSION_EVENT, bump);
+        return () => window.removeEventListener(ENTRY_SESSION_EVENT, bump);
+    }, []);
 
     useEffect(() => {
         if (!hydrated) return;
@@ -104,11 +155,11 @@ export function useTranscriptDraft({ variant }: UseTranscriptDraftOptions) {
             return;
         }
         const t = window.setTimeout(() => {
-            if (draft) writeDraftToStorage(draft, variant);
-            else removeDraftFromStorage(variant);
+            if (draft) writeDraftToStorage(draft);
+            else removeDraftFromStorage();
         }, AUTOSAVE_MS);
         return () => window.clearTimeout(t);
-    }, [draft, hydrated, variant]);
+    }, [draft, hydrated]);
 
     const updateDraft = useCallback((patch: Partial<TranscriptDraft>) => {
         setDraft((prev) => {
@@ -118,82 +169,144 @@ export function useTranscriptDraft({ variant }: UseTranscriptDraftOptions) {
     }, []);
 
     const ensureDraft = useCallback(() => {
-        const existing = readDraft(variant);
+        const existing = readDraft();
         if (existing) {
             setDraft(existing);
             skipPersistRef.current = true;
             return existing;
         }
         const fresh = createEmptyDraft();
-        writeDraftToStorage(fresh, variant);
+        writeDraftToStorage(fresh);
         setDraft(fresh);
         skipPersistRef.current = true;
         return fresh;
-    }, [variant]);
-
-    const startFreshDraft = useCallback(() => {
-        removeDraftFromStorage(variant);
-        const fresh = createEmptyDraft();
-        writeDraftToStorage(fresh, variant);
-        setDraft(fresh);
-        skipPersistRef.current = true;
-        return fresh;
-    }, [variant]);
-
-    const goToPreview = useCallback(() => {
-        setDraft((prev) => {
-            const base = prev ?? createEmptyDraft();
-            return { ...base, uiPhase: 'preview', updatedAt: new Date().toISOString() };
-        });
     }, []);
 
-    const goToSurveyFromPreview = useCallback(() => {
-        setDraft((prev) => {
-            if (!prev) return prev;
-            return {
-                ...prev,
-                uiPhase: 'survey',
-                stepIndex: TRANSCRIPT_STEP_COUNT - 1,
-                updatedAt: new Date().toISOString()
-            };
-        });
+    const startFreshDraft = useCallback(() => {
+        removeDraftFromStorage();
+        const fresh = createEmptyDraft();
+        writeDraftToStorage(fresh);
+        setDraft(fresh);
+        skipPersistRef.current = true;
+        return fresh;
+    }, []);
+
+    /** Load a saved achievement into the editor; overwrites any current draft. */
+    const loadEntryForEdit = useCallback((entryId: string) => {
+        const list = readEntries();
+        const entry = list.find((e) => e.id === entryId);
+        if (!entry) return false;
+        const nextDraft: TranscriptDraft = {
+            id: newId(),
+            updatedAt: new Date().toISOString(),
+            stepIndex: 0,
+            uiPhase: 'survey',
+            programName: entry.programName,
+            completionDate: entry.completionDate,
+            confidence: entry.confidence,
+            oneSentence: entry.oneSentence,
+            topSkills: [...entry.topSkills],
+            whatMadeYouFinish: entry.whatMadeYouFinish,
+            goalConnection: entry.goalConnection,
+            pride: entry.pride,
+            standoutMoment: entry.standoutMoment,
+            adviceToPeer: entry.adviceToPeer,
+            editingEntryId: entry.id
+        };
+        writeDraftToStorage(nextDraft);
+        setDraft(nextDraft);
+        skipPersistRef.current = true;
+        return true;
     }, []);
 
     const persistDraftNow = useCallback(() => {
         const d = draftRef.current;
-        if (d) writeDraftToStorage(d, variant);
-    }, [variant]);
+        if (d) writeDraftToStorage(d);
+    }, []);
 
-    const completeEntry = useCallback(
-        (source: TranscriptDraft) => {
+    const completeEntry = useCallback((source: TranscriptDraft) => {
+        const payload = {
+            programName: source.programName,
+            completionDate: source.completionDate,
+            confidence: source.confidence,
+            oneSentence: source.oneSentence,
+            topSkills: source.topSkills.slice(0, TOP_SKILLS_MAX),
+            whatMadeYouFinish: source.whatMadeYouFinish,
+            goalConnection: source.goalConnection,
+            pride: source.pride,
+            standoutMoment: source.standoutMoment,
+            adviceToPeer: source.adviceToPeer
+        };
+
+        let list: TranscriptEntry[];
+        if (source.editingEntryId) {
+            const existing = readEntries();
+            const idx = existing.findIndex((e) => e.id === source.editingEntryId);
+            if (idx >= 0) {
+                const prev = existing[idx];
+                const updated: TranscriptEntry = {
+                    ...prev,
+                    ...payload
+                };
+                list = [...existing];
+                list[idx] = updated;
+            } else {
+                const entry: TranscriptEntry = {
+                    id: newId(),
+                    createdAt: new Date().toISOString(),
+                    ...payload
+                };
+                list = [...existing, entry];
+            }
+        } else {
             const entry: TranscriptEntry = {
                 id: newId(),
                 createdAt: new Date().toISOString(),
-                programName: source.programName,
-                completionDate: source.completionDate,
-                confidence: source.confidence,
-                oneSentence: source.oneSentence,
-                skillKnowledge: source.skillKnowledge,
-                goalConnection: source.goalConnection,
-                pride: source.pride,
-                standoutMoment: source.standoutMoment,
-                adviceToPeer: source.adviceToPeer
+                ...payload
             };
-            const list = [...readEntries(variant), entry];
-            writeEntriesToStorage(list, variant);
-            setEntries(list);
-            removeDraftFromStorage(variant);
-            setDraft(null);
-            skipPersistRef.current = true;
-        },
-        [variant]
-    );
+            list = [...readEntries(), entry];
+        }
+        writeEntriesToStorage(list);
+        setEntries(list);
+        removeDraftFromStorage();
+        setDraft(null);
+        skipPersistRef.current = true;
+        dispatchEntrySessionUpdated();
+    }, []);
+
+    /** Upsert one achievement into committed storage (entry page multi-row Done). */
+    const upsertCommittedEntry = useCallback((entry: TranscriptEntry) => {
+        const existing = readEntries();
+        const idx = existing.findIndex((e) => e.id === entry.id);
+        let list: TranscriptEntry[];
+        if (idx >= 0) {
+            list = [...existing];
+            list[idx] = entry;
+        } else {
+            list = [...existing, entry];
+        }
+        writeEntriesToStorage(list);
+        setEntries(list);
+        dispatchEntrySessionUpdated();
+    }, []);
+
+    /** Remove a saved achievement from device storage and entry session. */
+    const deleteCommittedEntry = useCallback((id: string): TranscriptEntrySession | null => {
+        const nextSession = deleteTranscriptEntryById(id);
+        setEntries(readTranscriptEntriesFromStorage());
+        skipPersistRef.current = true;
+        return nextSession;
+    }, []);
 
     const reloadEntries = useCallback(() => {
-        setEntries(readEntries(variant));
-    }, [variant]);
+        setEntries(readEntries());
+    }, []);
 
-    const hasDraft = useMemo(() => Boolean(draft), [draft]);
+    const hasDraft = useMemo(() => {
+        void entrySessionEpoch;
+        if (draft) return true;
+        return entrySessionIsDirty(readEntrySessionFromStorage(), readTranscriptEntriesFromStorage());
+    }, [draft, entrySessionEpoch]);
 
     return {
         draft,
@@ -203,10 +316,11 @@ export function useTranscriptDraft({ variant }: UseTranscriptDraftOptions) {
         updateDraft,
         ensureDraft,
         startFreshDraft,
-        goToPreview,
-        goToSurveyFromPreview,
         completeEntry,
+        upsertCommittedEntry,
+        deleteCommittedEntry,
         reloadEntries,
-        persistDraftNow
+        persistDraftNow,
+        loadEntryForEdit
     };
 }

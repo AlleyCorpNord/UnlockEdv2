@@ -6,10 +6,13 @@ import {
     getClassTitle,
     getFilterDropdowns,
     getProgramData,
-    getProgramTitle
+    getProgramTitle,
+    getStudentLayer2Data
 } from '@/loaders/routeLoaders';
 import Error from '@/pages/Error';
-import ResidentOverview from '@/pages/learning/ResidentOverview';
+import ResidentProgramsLayout from '@/pages/learning/ResidentProgramsLayout';
+import ResidentProgramsIndex from '@/pages/learning/ResidentProgramsIndex';
+import ResidentOnlineCourses from '@/pages/learning/ResidentOnlineCourses';
 import ClassesPage from '@/pages/ClassesPage';
 import ProgramsPage from '@/pages/ProgramsPage';
 import ProgramManagementForm from '@/pages/programs/ProgramManagementForm';
@@ -27,16 +30,32 @@ export const ProgramRoutes = declareAuthenticatedRoutes(
     [
         {
             path: 'resident-programs',
-            element: <ResidentOverview />,
-            loader: getProgramData,
+            element: <ResidentProgramsLayout />,
             handle: {
-                title: 'My Programs',
+                title: 'Programs',
                 path: ['resident-programs']
-            }
+            },
+            children: [
+                {
+                    index: true,
+                    element: <ResidentProgramsIndex />,
+                    handle: { title: 'Programs' }
+                },
+                {
+                    path: 'online-courses',
+                    element: <ResidentOnlineCourses />,
+                    loader: getStudentLayer2Data,
+                    handle: {
+                        title: 'Online courses',
+                        path: ['resident-programs']
+                    }
+                }
+            ]
         }
     ],
     [UserRole.Student],
-    [FeatureAccess.ProgramAccess]
+    undefined,
+    [FeatureAccess.ProgramAccess, FeatureAccess.ProviderAccess]
 );
 
 export const DeptAdminProgramRoutes = declareAuthenticatedRoutes(

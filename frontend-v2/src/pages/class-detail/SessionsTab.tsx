@@ -818,7 +818,7 @@ export function SessionsTab({ cls, onClassMutate }: SessionsTabProps) {
             />
 
             {selectedDates.size > 0 && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#E2E7EA] border border-gray-400 rounded-lg shadow-lg px-6 py-4">
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-canvas border border-gray-400 rounded-lg shadow-lg px-6 py-4">
                     <div className="flex items-center gap-6">
                         <div className="text-sm">
                             <span className="font-semibold text-[#203622]">
@@ -969,10 +969,10 @@ function SessionRow({
         if (isCancelled)
             return 'border-gray-300 bg-gray-100 hover:bg-gray-200';
         if (isToday) return 'border-blue-200 bg-blue-50 hover:bg-blue-100';
-        if (hasAttendance) return 'border-gray-200 hover:bg-[#E2E7EA]/30';
+        if (hasAttendance) return 'border-gray-200 hover:bg-canvas/30';
         if (isPast)
             return 'border-amber-200 bg-amber-50/30 hover:bg-amber-50';
-        return 'border-gray-200 bg-gray-50 hover:bg-[#E2E7EA]/30';
+        return 'border-gray-200 bg-gray-50 hover:bg-canvas/30';
     };
 
     const getIcon = () => {

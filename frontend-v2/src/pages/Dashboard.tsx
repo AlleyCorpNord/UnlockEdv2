@@ -124,10 +124,10 @@ function FacilityAdminView({
     return (
         <div>
             <div className="mb-6">
-                <h1 className="text-[1.5rem] leading-[1.5] font-medium font-sans text-[#203622] dark:text-white mb-2">
+                <h1 className="text-[#203622] mb-2 dark:text-foreground">
                     Facility Dashboard
                 </h1>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-gray-600 dark:text-muted-foreground">
                     {facilityName}
                 </p>
             </div>
@@ -179,7 +179,7 @@ function DeptAdminView({
     return (
         <div>
             <div className="mb-6">
-                <h1 className="text-[1.5rem] leading-[1.5] font-medium font-sans text-[#203622] dark:text-white mb-2">
+                <h1 className="text-[#203622] mb-2 dark:text-foreground">
                     Department Overview
                 </h1>
             </div>
@@ -348,7 +348,7 @@ function TodaysSchedule({
                             return (
                                 <div
                                     key={`${item.class_id}-${item.event_id}-${item.date}-${item.start_time}`}
-                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-[#E2E7EA] dark:bg-[#262626] rounded-lg hover:bg-gray-100 dark:hover:bg-[#262626]/80 transition-colors group"
+                                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-canvas rounded-lg hover:bg-gray-100 dark:hover:bg-canvas/80 transition-colors group"
                                 >
                                     <div
                                         onClick={() =>
@@ -517,7 +517,7 @@ function MissingAttendanceWidget({
                     {!showAll && remainingCount > 0 && (
                         <button
                             onClick={() => setShowAll(true)}
-                            className="w-full mt-3 py-2 text-sm text-[#556830] hover:text-[#203622] dark:text-[#8fb55e] dark:hover:text-white hover:bg-[#E2E7EA] dark:hover:bg-[#262626] rounded-lg transition-colors flex items-center justify-center gap-2"
+                            className="w-full mt-3 py-2 text-sm text-[#556830] hover:text-[#203622] dark:text-[#8fb55e] dark:hover:text-white hover:bg-canvas rounded-lg transition-colors flex items-center justify-center gap-2"
                         >
                             Show {remainingCount} more{' '}
                             <ChevronDown className="size-4" />
@@ -549,7 +549,7 @@ function QuickActions({ navigate }: { navigate: (path: string) => void }) {
                     <TooltipTrigger asChild>
                         <button
                             onClick={() => navigate('/programs')}
-                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-[#E2E7EA] dark:hover:bg-[#262626]/80 text-[#203622] dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors"
+                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-canvas dark:hover:bg-canvas/80 text-[#203622] dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors"
                         >
                             <RectangleStackIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
                             <span className="text-sm">View All Programs</span>
@@ -564,7 +564,7 @@ function QuickActions({ navigate }: { navigate: (path: string) => void }) {
                     <TooltipTrigger asChild>
                         <button
                             onClick={() => navigate('/classes')}
-                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-[#E2E7EA] dark:hover:bg-[#262626]/80 text-[#203622] dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors"
+                            className="w-full flex items-center gap-3 bg-white dark:bg-[#262626] hover:bg-canvas dark:hover:bg-canvas/80 text-[#203622] dark:text-white px-4 py-3 rounded-lg border border-gray-200 dark:border-[#262626] transition-colors"
                         >
                             <ListBulletIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
                             <span className="text-sm">Browse Classes</span>
@@ -593,7 +593,7 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
     return (
         <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626] overflow-hidden">
             <table className="w-full">
-                <thead className="bg-[#E2E7EA] dark:bg-[#262626] border-b border-gray-200 dark:border-[#262626]">
+                <thead className="bg-canvas border-b border-gray-200 dark:border-[#262626]">
                     <tr>
                         <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
                             Facility
@@ -649,7 +649,7 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
                     {rows.map((row) => (
                         <tr
                             key={row.facility_id}
-                            className="hover:bg-[#E2E7EA]/50 dark:hover:bg-[#262626]/50 cursor-pointer transition-colors"
+                            className="hover:bg-canvas/50 cursor-pointer transition-colors"
                         >
                             <td className="px-6 py-4">
                                 <div className="text-[#203622] dark:text-white hover:text-[#556830] dark:hover:text-[#8fb55e] transition-colors">
@@ -730,7 +730,7 @@ function MetricCards({
                 icon={
                     <AcademicCapIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
                 }
-                iconBg="bg-[#E2E7EA] dark:bg-[#262626]"
+                iconBg="bg-canvas"
                 label="Active Classes"
                 value={stats.activeClasses}
                 tooltip="Classes currently in Active status with enrolled residents"
@@ -740,7 +740,7 @@ function MetricCards({
                 icon={
                     <UsersIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
                 }
-                iconBg="bg-[#E2E7EA] dark:bg-[#262626]"
+                iconBg="bg-canvas"
                 label="Total Enrollment"
                 value={stats.totalEnrollment}
                 tooltip="Number of residents enrolled across all active classes"
@@ -750,7 +750,7 @@ function MetricCards({
                 icon={
                     <ChartBarIcon className="size-5 text-[#556830] dark:text-[#8fb55e]" />
                 }
-                iconBg="bg-[#E2E7EA] dark:bg-[#262626]"
+                iconBg="bg-canvas"
                 label="Capacity Utilization"
                 value={`${stats.capacityUtilization}%`}
                 tooltip="Percentage of available seats filled across all classes"

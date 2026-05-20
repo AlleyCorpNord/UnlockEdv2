@@ -39,6 +39,8 @@
     --sidebar-accent-foreground: #1a1a1a;
     --sidebar-border: #e5e5e5;
     --sidebar-ring: #b3b3b3;
+    /* Main authenticated workspace surface (under nav/sidebar), not cards or muted UI fills */
+    --canvas: #e2e7ea;
 }
 
 .dark {
@@ -74,6 +76,7 @@
     --sidebar-accent-foreground: #fafafa;
     --sidebar-border: #262626;
     --sidebar-ring: #525252;
+    --canvas: #262626;
 }
 
 @theme inline {
@@ -89,6 +92,7 @@
     --color-secondary-foreground: var(--secondary-foreground);
     --color-muted: var(--muted);
     --color-muted-foreground: var(--muted-foreground);
+    --color-canvas: var(--canvas);
     --color-accent: var(--accent);
     --color-accent-foreground: var(--accent-foreground);
     --color-destructive: var(--destructive);
@@ -369,4 +373,49 @@ input[type='checkbox']:focus {
 }
 [data-slot="sheet-overlay"][data-state="closed"] {
     animation: sheet-fade-out 200ms ease-in;
+}
+
+/* Learning Record document — PDF export + print-friendly layout */
+.learning-record-pdf-export {
+    overflow: visible;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+}
+
+.learning-record-pdf-export [data-achievement-block] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+.learning-record-pdf-export section,
+.learning-record-pdf-export .break-inside-avoid {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+@media print {
+    [data-slot='digital-transcript-entry-toolbar'],
+    [data-slot='transcript-wysiwyg-editor-pane'] {
+        display: none !important;
+    }
+
+    [data-slot='transcript-wysiwyg-layout'] {
+        display: block !important;
+        border: none !important;
+    }
+
+    [data-slot='transcript-wysiwyg-preview-pane'] {
+        overflow: visible !important;
+    }
+
+    .learning-record-print-root {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+
+    .learning-record-print-root section,
+    .learning-record-print-root .break-inside-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
 }

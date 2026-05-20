@@ -88,7 +88,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
     return (
         <div>
             <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <h1 className="text-[#203622]">{cls.name}</h1>
+                <h1 className="text-[#203622] dark:text-foreground">{cls.name}</h1>
                 {isTerminal ? (
                     <Badge
                         variant="outline"
@@ -266,7 +266,7 @@ function InfoCard({
     smallValue?: boolean;
 }) {
     return (
-        <div className="bg-[#E2E7EA] rounded-lg p-3">
+        <div className="bg-canvas rounded-lg p-3">
             <div className="text-sm text-gray-600 mb-1">{label}</div>
             <div className={`text-[#203622]${smallValue ? ' text-sm' : ''}`}>
                 {value}

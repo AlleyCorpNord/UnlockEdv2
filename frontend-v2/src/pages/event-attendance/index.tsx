@@ -160,7 +160,7 @@ export default function EventAttendance() {
 
     if (datesLoading || isLoading) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] flex items-center justify-center">
+            <div className="min-h-[calc(100vh-4rem)] bg-canvas flex items-center justify-center">
                 <div className="text-gray-500">Loading...</div>
             </div>
         );
@@ -168,7 +168,7 @@ export default function EventAttendance() {
 
     if (error) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] flex items-center justify-center">
+            <div className="min-h-[calc(100vh-4rem)] bg-canvas flex items-center justify-center">
                 <div className="text-red-600">Error loading attendance data</div>
             </div>
         );
@@ -181,7 +181,7 @@ export default function EventAttendance() {
 
     if (!scheduled) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] flex items-center justify-center">
+            <div className="min-h-[calc(100vh-4rem)] bg-canvas flex items-center justify-center">
                 <div className="text-red-600">
                     No class session was scheduled for this date.
                 </div>
@@ -191,7 +191,7 @@ export default function EventAttendance() {
 
     if (isFutureDay) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] flex items-center justify-center">
+            <div className="min-h-[calc(100vh-4rem)] bg-canvas flex items-center justify-center">
                 <div className="text-red-600">
                     This session is scheduled for a future date. Attendance
                     will be available after it occurs.
@@ -329,16 +329,16 @@ export default function EventAttendance() {
     }
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
+        <div className="min-h-[calc(100vh-4rem)] bg-canvas">
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-5xl mx-auto px-6 py-6">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold text-[#203622] mb-2">
+                            <h1 className="text-[#203622] mb-2 dark:text-foreground">
                                 Take Attendance
                             </h1>
-                            <div className="text-gray-600">{className}</div>
-                            <div className="text-sm text-gray-500 mt-1">
+                            <div className="text-gray-600 dark:text-muted-foreground">{className}</div>
+                            <div className="text-sm text-gray-500 dark:text-muted-foreground mt-1">
                                 {formattedDate}
                             </div>
                         </div>
@@ -525,7 +525,7 @@ function AttendanceRowCard({
         : null;
 
     return (
-        <div className="px-4 sm:px-6 py-5 hover:bg-[#E2E7EA]/30 transition-colors">
+        <div className="px-4 sm:px-6 py-5 hover:bg-canvas/30 transition-colors">
             <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                 <div className="min-w-[70px] sm:min-w-[100px] shrink-0">
                     <div className="text-[#203622] font-medium">

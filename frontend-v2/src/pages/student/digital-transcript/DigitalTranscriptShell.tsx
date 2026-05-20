@@ -2,32 +2,42 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
-/** Moss / forest accent — aligns with Knowledge Center and brand nav */
-export const dtAccent = 'text-[#556830]';
-export const dtAccentSoft = 'bg-[#556830]/10';
-export const dtTitle = 'text-[#203622] dark:text-foreground';
+/** Page canvas — shadcn `muted` surface */
+export const dtPageSurface = 'bg-muted';
+
+/** Viewport below TopNav (`h-16`) — fills visible main area on Learning Record routes */
+export const dtShellMinHeight = 'min-h-[calc(100dvh-4rem)]';
 
 interface ShellProps {
     children: ReactNode;
-    /** Survey is slightly narrower for reading comfort; xlWide fits split editor + preview */
-    variant?: 'narrow' | 'wide' | 'xlWide';
+    /**
+     * `narrow` — centered column for lightweight states (e.g. loading).
+     * `wide` — full width within the same `max-w-7xl` content area as Knowledge Center / Home.
+     */
+    variant?: 'narrow' | 'wide';
 }
 
+/**
+ * Learning Record shell: page scrolls with the main layout (no nested ScrollArea).
+ * `max-w-7xl mx-auto px-6 py-8` matches ResidentKnowledgeCenter rhythm.
+ */
 export function DigitalTranscriptShell({ children, variant = 'wide' }: ShellProps) {
-    const widthClass =
-        variant === 'narrow'
-            ? 'mx-auto max-w-xl px-5 pb-24 pt-8 sm:px-8 sm:pt-10'
-            : variant === 'xlWide'
-              ? 'mx-auto max-w-6xl px-5 pb-24 pt-8 sm:px-8 sm:pt-12'
-              : 'mx-auto max-w-2xl px-5 pb-24 pt-8 sm:px-8 sm:pt-12';
+    const innerClass = variant === 'narrow' ? 'mx-auto w-full max-w-xl' : 'w-full';
 
     return (
-        <div data-slot="digital-transcript-shell" className={cn('relative min-h-[min(70vh,40rem)]', widthClass)}>
+        <div
+            data-slot="digital-transcript-shell"
+            className={cn('flex flex-1 flex-col', dtShellMinHeight, dtPageSurface)}
+        >
             <div
-                className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#556830]/30 to-transparent dark:via-primary/25 sm:inset-x-12"
-                aria-hidden
-            />
-            {children}
+                className={cn(
+                    'mx-auto flex w-full max-w-7xl flex-1 flex-col px-6 py-8',
+                    dtShellMinHeight,
+                    dtPageSurface
+                )}
+            >
+                <div className={cn('relative flex min-h-0 flex-1 flex-col', innerClass)}>{children}</div>
+            </div>
         </div>
     );
 }
@@ -43,11 +53,7 @@ export function DigitalTranscriptBackLink({
         <Link
             to={to}
             data-slot="digital-transcript-back"
-            className={cn(
-                'group inline-flex items-center gap-1.5 text-sm font-medium transition-colors',
-                dtAccent,
-                'hover:text-[#203622] dark:hover:text-foreground'
-            )}
+            className="group inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
         >
             <span
                 className="inline-block transition-transform group-hover:-translate-x-0.5"
@@ -64,10 +70,7 @@ export function DigitalTranscriptEyebrow({ children }: { children: ReactNode }) 
     return (
         <p
             data-slot="digital-transcript-eyebrow"
-            className={cn(
-                'text-[11px] font-semibold uppercase tracking-[0.22em]',
-                dtAccent
-            )}
+            className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
         >
             {children}
         </p>
@@ -75,5 +78,7 @@ export function DigitalTranscriptEyebrow({ children }: { children: ReactNode }) 
 }
 
 export function DigitalTranscriptPageTitle({ children }: { children: ReactNode }) {
-    return <h1 className="text-[#203622] mb-2">{children}</h1>;
+    return (
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">{children}</h1>
+    );
 }

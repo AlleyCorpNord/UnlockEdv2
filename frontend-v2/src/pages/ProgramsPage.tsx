@@ -345,16 +345,16 @@ export default function ProgramsPage() {
         : 'Supporting resident growth and rehabilitation';
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA] dark:bg-[#0a0a0a]">
+        <div className="min-h-[calc(100vh-4rem)] bg-canvas">
             <div className="max-w-7xl mx-auto px-6 pt-[34px] pb-8">
                 {/* Header */}
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-2">
                         <div>
-                            <h1 className="text-2xl font-medium text-[#203622]">
+                            <h1 className="text-[#203622] mb-2 dark:text-foreground">
                                 Programs
                             </h1>
-                        <p className="text-gray-600 mt-1.5 leading-[1.5]">
+                        <p className="text-gray-600 dark:text-muted-foreground mt-1.5 leading-[1.5]">
                                 {subtitle}
                             </p>
                         </div>
@@ -1170,7 +1170,7 @@ function MetricBox({
     secondaryLines?: { value: string | number }[];
 }) {
     return (
-        <div className="bg-[#E2E7EA] rounded-lg p-3">
+        <div className="bg-canvas rounded-lg p-3">
             <div className="text-xs text-gray-600 mb-2">{label}</div>
             <div className="space-y-1">
                 <div className="flex items-baseline gap-1.5">
@@ -1223,7 +1223,7 @@ function ProgramsTable({
         <TooltipProvider>
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                 <Table>
-                    <TableHeader className="bg-[#E2E7EA] [&_tr]:border-b-0">
+                    <TableHeader className="bg-canvas [&_tr]:border-b-0">
                         <TableRow>
                             <TableHead className="text-left px-6 py-4 text-sm font-bold text-[#203622] w-[30%]">
                                 Program
@@ -1264,7 +1264,7 @@ function ProgramsTable({
                             return (
                                 <TableRow
                                     key={program.program_id}
-                                    className={`hover:bg-[#E2E7EA]/50 transition-colors cursor-pointer ${
+                                    className={`hover:bg-canvas/50 transition-colors cursor-pointer ${
                                         status ===
                                         ProgramEffectiveStatus.Archived
                                             ? 'opacity-40'

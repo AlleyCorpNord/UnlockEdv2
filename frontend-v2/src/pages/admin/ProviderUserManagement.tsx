@@ -171,7 +171,7 @@ export default function ProviderUserManagement() {
 
     if (providerLoading) {
         return (
-            <div className="bg-muted min-h-screen p-6">
+            <div className="bg-canvas min-h-screen p-6">
                 <div className="max-w-7xl mx-auto space-y-6">
                     <Skeleton className="h-10 w-64" />
                     <Skeleton className="h-96 w-full rounded-lg" />
@@ -182,7 +182,7 @@ export default function ProviderUserManagement() {
 
     if (provider?.type === ProviderPlatformType.KOLIBRI) {
         return (
-            <div className="bg-muted min-h-screen p-6">
+            <div className="bg-canvas min-h-screen p-6">
                 <div className="max-w-7xl mx-auto">
                     <div className="bg-card rounded-lg border border-border p-8 text-center">
                         <p className="text-muted-foreground">
@@ -251,7 +251,7 @@ export default function ProviderUserManagement() {
     ];
 
     return (
-        <div className="bg-muted min-h-screen p-6">
+        <div className="bg-canvas min-h-screen p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 <PageHeader
                     title={provider?.name ?? 'Provider Users'}
