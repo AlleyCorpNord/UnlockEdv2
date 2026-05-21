@@ -32,7 +32,7 @@ function ClassRow({
     return (
         <div
             onClick={onClick}
-            className={`p-6 hover:bg-[#E2E7EA]/50 cursor-pointer transition-colors ${className ?? ''}`}
+            className={`p-6 hover:bg-canvas/50 cursor-pointer transition-colors ${className ?? ''}`}
         >
             <div className="flex items-start justify-between">
                 <div className="flex-1">

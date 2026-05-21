@@ -218,7 +218,7 @@ export default function LibraryViewer() {
                 </div>
             </div>
 
-            <div className="flex-1 bg-[#E2E7EA]">
+            <div className="flex-1 bg-canvas">
                 {isLoading ? (
                     <div className="flex h-full items-center justify-center">
                         <Skeleton className="w-full h-[600px]" />

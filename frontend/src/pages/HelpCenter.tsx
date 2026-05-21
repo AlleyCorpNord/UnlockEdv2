@@ -14,7 +14,7 @@ export default function HelpCenter({ close }: { close?: () => void }) {
                         <XMarkIcon className="size-5 text-muted-foreground" />
                     </button>
                 </div>
-                <h1 className="text-xl font-bold text-foreground">
+                <h1 className="text-[#203622] mb-2 dark:text-foreground">
                     Help Center
                 </h1>
                 <Tour close={close} />
@@ -24,13 +24,13 @@ export default function HelpCenter({ close }: { close?: () => void }) {
     }
 
     return (
-        <div className="bg-muted min-h-screen p-6">
+        <div className="bg-canvas min-h-screen p-6">
             <div className="max-w-3xl mx-auto space-y-8">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground">
+                    <h1 className="text-[#203622] mb-2 dark:text-foreground">
                         Help Center
                     </h1>
-                    <p className="text-muted-foreground mt-1">
+                    <p className="text-gray-600 dark:text-muted-foreground mt-1">
                         Find answers to common questions and get support.
                     </p>
                 </div>

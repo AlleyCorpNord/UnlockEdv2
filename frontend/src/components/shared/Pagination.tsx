@@ -1,4 +1,22 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useId } from 'react';
+import { Label } from '@/components/ui/label';
+import {
+    Pagination as PaginationNav,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious
+} from '@/components/ui/pagination';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface PaginationProps {
     currentPage: number;
@@ -7,6 +25,8 @@ interface PaginationProps {
     onPageChange: (page: number) => void;
     onItemsPerPageChange: (itemsPerPage: number) => void;
     itemLabel?: string;
+    /** Merged onto the outer bar (e.g. alignment with a parent card). */
+    className?: string;
 }
 
 function getPageNumbers(currentPage: number, totalPages: number) {
@@ -36,100 +56,116 @@ export function Pagination({
     itemsPerPage,
     onPageChange,
     onItemsPerPageChange,
-    itemLabel = 'items'
+    itemLabel = 'items',
+    className
 }: PaginationProps) {
+    const perPageFieldId = useId();
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
     const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
     return (
-        <div className="bg-white dark:bg-[#171717] border-t border-gray-200 dark:border-[#262626] px-6 py-4 rounded-b-lg">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-6">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+        <div
+            data-slot="shared-pagination"
+            className={cn(
+                'rounded-b-lg border-t border-border bg-card px-6 py-4 text-card-foreground',
+                className
+            )}
+        >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2">
+                    <p className="text-sm text-muted-foreground">
                         Showing{' '}
-                        <span className="font-medium text-gray-900 dark:text-white">
+                        <span className="font-medium text-foreground">
                             {startItem}-{endItem}
                         </span>{' '}
                         of{' '}
-                        <span className="font-medium text-gray-900 dark:text-white">
-                            {totalItems}
-                        </span>{' '}
-                        {itemLabel}
+                        <span className="font-medium text-foreground">{totalItems}</span> {itemLabel}
                     </p>
                     <div className="flex items-center gap-2">
-                        <label
-                            htmlFor="items-per-page"
-                            className="text-sm text-gray-600 dark:text-gray-400"
+                        <Label
+                            htmlFor={perPageFieldId}
+                            className="whitespace-nowrap text-sm font-normal text-muted-foreground"
                         >
-                            Items per page:
-                        </label>
-                        <select
-                            id="items-per-page"
-                            value={itemsPerPage}
-                            onChange={(e) => {
-                                onItemsPerPageChange(Number(e.target.value));
+                            Items per page
+                        </Label>
+                        <Select
+                            value={String(itemsPerPage)}
+                            onValueChange={(value) => {
+                                onItemsPerPageChange(Number(value));
                                 onPageChange(1);
                             }}
-                            className="bg-white dark:bg-[#262626] text-gray-900 dark:text-white px-3 py-1.5 rounded border border-gray-200 dark:border-[#404040] text-sm focus:outline-none focus:ring-2 focus:ring-[#556830] dark:focus:ring-[#8fb55e]"
                         >
-                            <option value={20}>20</option>
-                            <option value={40}>40</option>
-                            <option value={80}>80</option>
-                        </select>
+                            <SelectTrigger id={perPageFieldId} className="w-[4.25rem] shrink-0">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent position="popper">
+                                <SelectItem value="20">20</SelectItem>
+                                <SelectItem value="40">40</SelectItem>
+                                <SelectItem value="80">80</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => onPageChange(currentPage - 1)}
-                        disabled={currentPage <= 1}
-                        className="p-2 rounded-lg border border-gray-200 dark:border-[#404040] text-gray-600 dark:text-gray-400 hover:bg-[#E2E7EA] dark:hover:bg-[#262626] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        aria-label="Previous page"
-                    >
-                        <ChevronLeft className="size-5" />
-                    </button>
-
-                    <div className="flex items-center gap-1">
-                        {getPageNumbers(currentPage, totalPages).map(
-                            (page, index) => {
-                                if (page === '...') {
-                                    return (
-                                        <span
-                                            key={`ellipsis-${index}`}
-                                            className="px-3 py-2 text-gray-600 dark:text-gray-400"
-                                        >
-                                            ...
-                                        </span>
-                                    );
-                                }
-                                const num = page as number;
+                <PaginationNav
+                    className="mx-0 w-full justify-center sm:w-auto sm:justify-end"
+                    aria-label="Table pagination"
+                >
+                    <PaginationContent className="flex-wrap justify-center gap-1">
+                        <PaginationItem>
+                            <PaginationPrevious
+                                href="#"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    if (currentPage > 1) onPageChange(currentPage - 1);
+                                }}
+                                className={cn(
+                                    currentPage <= 1 && 'pointer-events-none opacity-50',
+                                    'cursor-pointer'
+                                )}
+                            />
+                        </PaginationItem>
+                        {getPageNumbers(currentPage, totalPages).map((page, index) => {
+                            if (page === '...') {
                                 return (
-                                    <button
-                                        key={num}
-                                        onClick={() => onPageChange(num)}
-                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                            num === currentPage
-                                                ? 'bg-[#556830] text-white'
-                                                : 'text-gray-600 dark:text-gray-400 hover:bg-[#E2E7EA] dark:hover:bg-[#262626]'
-                                        }`}
-                                    >
-                                        {num}
-                                    </button>
+                                    <PaginationItem key={`ellipsis-${index}`}>
+                                        <PaginationEllipsis />
+                                    </PaginationItem>
                                 );
                             }
-                        )}
-                    </div>
-
-                    <button
-                        onClick={() => onPageChange(currentPage + 1)}
-                        disabled={currentPage >= totalPages}
-                        className="p-2 rounded-lg border border-gray-200 dark:border-[#404040] text-gray-600 dark:text-gray-400 hover:bg-[#E2E7EA] dark:hover:bg-[#262626] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        aria-label="Next page"
-                    >
-                        <ChevronRight className="size-5" />
-                    </button>
-                </div>
+                            const num = page as number;
+                            return (
+                                <PaginationItem key={num}>
+                                    <PaginationLink
+                                        href="#"
+                                        isActive={num === currentPage}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            onPageChange(num);
+                                        }}
+                                        className="min-w-9 cursor-pointer"
+                                    >
+                                        {num}
+                                    </PaginationLink>
+                                </PaginationItem>
+                            );
+                        })}
+                        <PaginationItem>
+                            <PaginationNext
+                                href="#"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    if (currentPage < totalPages) onPageChange(currentPage + 1);
+                                }}
+                                className={cn(
+                                    currentPage >= totalPages && 'pointer-events-none opacity-50',
+                                    'cursor-pointer'
+                                )}
+                            />
+                        </PaginationItem>
+                    </PaginationContent>
+                </PaginationNav>
             </div>
         </div>
     );

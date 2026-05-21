@@ -181,8 +181,8 @@ export default function FacilityManagement() {
                 <div className="mb-8">
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-[#203622]">Facilities</h1>
-                            <p className="text-gray-600 mt-1">
+                            <h1 className="text-[#203622] mb-2 dark:text-foreground">Facilities</h1>
+                            <p className="text-gray-600 dark:text-muted-foreground mt-1">
                                 Manage correctional facilities and their
                                 configurations
                             </p>

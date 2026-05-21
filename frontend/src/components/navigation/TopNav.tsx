@@ -45,7 +45,7 @@ export default function TopNav({
     return (
         <header className="h-16 bg-background border-b border-border flex items-center justify-between px-6 shrink-0">
             <div className="flex flex-col min-w-0">
-                <h1 className="text-xl text-[#203622] truncate">
+                <h1 className="text-lg font-medium text-[#203622] truncate">
                     {pageTitle}
                 </h1>
                 {isFacilityAdmin(user) && (

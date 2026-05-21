@@ -76,7 +76,7 @@ export function FAQContent({ compact = false }: { compact?: boolean }) {
 
 export default function FAQs() {
     return (
-        <div className="bg-muted min-h-screen p-6">
+        <div className="bg-canvas min-h-screen p-6">
             <div className="max-w-3xl mx-auto">
                 <FAQContent />
             </div>

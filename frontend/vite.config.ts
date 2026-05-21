@@ -14,7 +14,7 @@ export default defineConfig({
     server: {
         host: '0.0.0.0',
         port: 5173,
-        allowedHosts: ['frontend']
+        allowedHosts: ['frontend', 'localhost', '127.0.0.1', 'host.docker.internal']
     },
     build: {
         sourcemap: true,

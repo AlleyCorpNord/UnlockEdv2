@@ -142,7 +142,7 @@ export default function ResidentProfile() {
 
     if (isLoading) {
         return (
-            <div className="min-h-[calc(100vh-4rem)] bg-[#E2E7EA]">
+            <div className="min-h-[calc(100vh-4rem)] bg-canvas">
                 <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
                     <Skeleton className="h-5 w-48" />
                     <Skeleton className="h-36 w-full" />

@@ -12,10 +12,13 @@ import Error from '@/pages/Error';
 
 function RouteGuard({
     allowedRoles,
-    features
+    features,
+    featuresAny
 }: {
     allowedRoles?: UserRole[];
     features?: FeatureAccess[];
+    /** User must have at least one of these features (OR). */
+    featuresAny?: FeatureAccess[];
 }) {
     const { user } = useAuth();
 
@@ -28,9 +31,13 @@ function RouteGuard({
     if (!user) {
         return null;
     }
+    const hasAnyRequiredFeature =
+        !featuresAny ||
+        featuresAny.some((f) => user.feature_access.includes(f));
     if (
         (allowedRoles && !allowedRoles.includes(user.role)) ||
-        (features && !hasFeature(user, ...features))
+        (features && !hasFeature(user, ...features)) ||
+        !hasAnyRequiredFeature
     ) {
         return <Navigate to={AUTHCALLBACK} />;
     }
@@ -48,12 +55,17 @@ function RouteGuard({
 export function declareAuthenticatedRoutes(
     routes: RouteObject[],
     roles?: UserRole[],
-    features?: FeatureAccess[]
+    features?: FeatureAccess[],
+    featuresAny?: FeatureAccess[]
 ): RouteObject {
     return {
         element: (
             <AuthProvider>
-                <RouteGuard allowedRoles={roles} features={features} />
+                <RouteGuard
+                    allowedRoles={roles}
+                    features={features}
+                    featuresAny={featuresAny}
+                />
             </AuthProvider>
         ),
         errorElement: <Error />,

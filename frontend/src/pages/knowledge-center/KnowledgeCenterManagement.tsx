@@ -628,8 +628,8 @@ export default function KnowledgeCenterManagement() {
     return (
         <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="mb-8">
-                <h1 className="text-[#203622] mb-2">Knowledge Center</h1>
-                <p className="text-gray-600">
+                <h1 className="text-[#203622] mb-2 dark:text-foreground">Knowledge Center</h1>
+                <p className="text-gray-600 dark:text-muted-foreground">
                     Manage libraries, videos, and helpful links for residents.
                 </p>
             </div>

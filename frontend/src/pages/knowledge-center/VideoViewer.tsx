@@ -134,7 +134,7 @@ export default function VideoViewer() {
                 </div>
             </div>
 
-            <div className="flex-1 bg-[#E2E7EA]">
+            <div className="flex-1 bg-canvas">
                 <video
                     width="100%"
                     height="100%"

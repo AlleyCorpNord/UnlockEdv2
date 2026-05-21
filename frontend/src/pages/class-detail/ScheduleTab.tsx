@@ -296,7 +296,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
 
             <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="flex items-start gap-4 p-4 bg-[#E2E7EA] rounded-lg">
+                    <div className="flex items-start gap-4 p-4 bg-canvas rounded-lg">
                         <Calendar className="size-5 text-[#556830] mt-0.5" />
                         <div>
                             <div className="text-[#203622] mb-1">
@@ -313,7 +313,7 @@ export function ScheduleTab({ cls, onClassMutate }: ScheduleTabProps) {
                             )}
                         </div>
                     </div>
-                    <div className="flex items-start gap-4 p-4 bg-[#E2E7EA] rounded-lg">
+                    <div className="flex items-start gap-4 p-4 bg-canvas rounded-lg">
                         <Clock className="size-5 text-[#556830] mt-0.5" />
                         <div>
                             <div className="text-[#203622] mb-1">

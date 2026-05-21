@@ -8,11 +8,14 @@ import {
 } from '@/auth/useAuth';
 import { FeatureAccess } from '@/types';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import Brand from '@/components/Brand';
 import { Button } from '@/components/ui/button';
 import { useTourContext } from '@/contexts/TourContext';
-import { LogOut } from 'lucide-react';
+import { LogOut, GraduationCap } from 'lucide-react';
+import {
+    isDigitalTranscriptPath
+} from '@/pages/student/digital-transcript/digitalTranscriptRoutes';
 import {
     HomeIcon,
     AcademicCapIcon,
@@ -25,9 +28,14 @@ import {
     CalendarIcon,
     ChevronDownIcon,
     ChevronRightIcon,
-    ArrowPathIcon,
-    QuestionMarkCircleIcon
+    QuestionMarkCircleIcon,
+    DocumentTextIcon
 } from '@heroicons/react/24/outline';
+
+/** Lucide defaults to stroke 2; Heroicons outline nav icons use 1.5 — match stroke weight. */
+function GraduationCapNavIcon(props: ComponentProps<typeof GraduationCap>) {
+    return <GraduationCap {...props} strokeWidth={1.5} />;
+}
 
 interface SidebarProps {
     collapsed: boolean;
@@ -260,7 +268,9 @@ function StudentNav({ collapsed, isActive, onNavigate, onToggleHelpCenter }: Nav
     const { tourState } = useTourContext();
     if (!user) return null;
     const hasOpen = hasFeature(user, FeatureAccess.OpenContentAccess);
+    const hasProvider = hasFeature(user, FeatureAccess.ProviderAccess);
     const hasProgram = hasFeature(user, FeatureAccess.ProgramAccess);
+    const hasProgramsHub = hasProgram || hasProvider;
 
     const tourHighlight = (target: string) =>
         tourState.tourActive && tourState.target === target
@@ -281,7 +291,8 @@ function StudentNav({ collapsed, isActive, onNavigate, onToggleHelpCenter }: Nav
                     extraClassName={tourHighlight('#navigate-homepage')}
                 />
             ) : (
-                !hasProgram && (
+                !hasOpen &&
+                !hasProgramsHub && (
                     <NavLink
                         to="/temp-home"
                         icon={HomeIcon}
@@ -304,16 +315,24 @@ function StudentNav({ collapsed, isActive, onNavigate, onToggleHelpCenter }: Nav
                     extraClassName={tourHighlight('#visit-knowledge-center')}
                 />
             )}
-            {hasProgram && (
+            {hasProgramsHub && (
                 <NavLink
                     to="/resident-programs"
-                    icon={ArrowPathIcon}
+                    icon={GraduationCapNavIcon}
                     label="Programs"
                     active={isActive(['/resident-programs'])}
                     collapsed={collapsed}
                     onClick={onNavigate}
                 />
             )}
+            <NavLink
+                to="/learning-record-funnel"
+                icon={DocumentTextIcon}
+                label="Learning Record"
+                active={isDigitalTranscriptPath(location.pathname)}
+                collapsed={collapsed}
+                onClick={onNavigate}
+            />
             <SectionHeader label="Help" collapsed={collapsed} />
             <NavButton
                 icon={QuestionMarkCircleIcon}

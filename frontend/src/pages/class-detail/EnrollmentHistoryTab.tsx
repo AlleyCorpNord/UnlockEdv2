@@ -156,7 +156,7 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                     {filtered.map((enrollment) => (
                         <div
                             key={enrollment.id}
-                            className="px-4 sm:px-6 py-4 hover:bg-[#E2E7EA]/30 transition-colors"
+                            className="px-4 sm:px-6 py-4 hover:bg-canvas/30 transition-colors"
                         >
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                                 <div className="flex items-start gap-3 sm:gap-6 flex-1">
@@ -213,7 +213,7 @@ export function EnrollmentHistoryTab({ classId }: EnrollmentHistoryTabProps) {
                                             )}
                                         </div>
                                         {enrollment.change_reason && (
-                                            <div className="mt-3 p-3 bg-[#E2E7EA]/60 rounded-md">
+                                            <div className="mt-3 p-3 bg-canvas/60 rounded-md">
                                                 <div className="text-xs text-gray-500 font-medium mb-1">
                                                     Reason:
                                                 </div>
