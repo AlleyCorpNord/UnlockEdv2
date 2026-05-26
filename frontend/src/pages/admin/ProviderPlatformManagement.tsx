@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
+import { Pagination } from '@/components/Pagination';
 import {
     ProviderPlatform,
     ProviderPlatformState,
@@ -41,17 +43,21 @@ export default function ProviderPlatformManagement() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [showAddModal, setShowAddModal] = useState(false);
+    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 20);
 
     const {
         data: providers,
         mutate,
         error,
         isLoading
-    } = useSWR<ServerResponseMany<ProviderPlatform>>(`/api/provider-platforms`);
+    } = useSWR<ServerResponseMany<ProviderPlatform>>(
+        `/api/provider-platforms?page=${page}&per_page=${perPage}`
+    );
 
     if (!user || !hasFeature(user, FeatureAccess.ProviderAccess)) return null;
 
     const providerData = providers?.data ?? [];
+    const totalItems = providers?.meta?.total ?? 0;
 
     const columns: Column<ProviderPlatform>[] = [
         {
@@ -140,23 +146,36 @@ export default function ProviderPlatformManagement() {
                         }
                     />
                 ) : (
-                    <DataTable
-                        columns={columns}
-                        data={providerData}
-                        keyExtractor={(p) => p.id}
-                        isLoading={isLoading}
-                        emptyMessage="No learning platforms found."
-                        onRowClick={(p) =>
-                            navigate(`/learning-platforms/${p.id}`)
-                        }
-                    />
+                    <div>
+                        <DataTable
+                            columns={columns}
+                            data={providerData}
+                            keyExtractor={(p) => p.id}
+                            isLoading={isLoading}
+                            emptyMessage="No learning platforms found."
+                            onRowClick={(p) =>
+                                navigate(`/learning-platforms/${p.id}`)
+                            }
+                        />
+                        <Pagination
+                            currentPage={page}
+                            totalItems={totalItems}
+                            itemsPerPage={perPage}
+                            onPageChange={setPage}
+                            onItemsPerPageChange={setPerPage}
+                            itemLabel="platforms"
+                        />
+                    </div>
                 )}
             </div>
 
             <AddProviderModal
                 open={showAddModal}
                 onOpenChange={setShowAddModal}
-                onSuccess={() => void mutate()}
+                onSuccess={() => {
+                    setPage(1);
+                    void mutate();
+                }}
             />
         </div>
     );
@@ -176,7 +195,6 @@ function AddProviderModal({
         ProviderPlatformType.CANVAS_CLOUD
     );
     const [baseUrl, setBaseUrl] = useState('');
-    const [accountId, setAccountId] = useState('');
     const [accessKey, setAccessKey] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
@@ -184,7 +202,6 @@ function AddProviderModal({
         setName('');
         setType(ProviderPlatformType.CANVAS_CLOUD);
         setBaseUrl('');
-        setAccountId('');
         setAccessKey('');
     };
 
@@ -197,7 +214,7 @@ function AddProviderModal({
                 name,
                 type,
                 base_url: baseUrl,
-                account_id: accountId,
+                account_id: '1',
                 access_key: accessKey,
                 state: 'enabled'
             }
@@ -274,18 +291,6 @@ function AddProviderModal({
                 </div>
                 <div>
                     <label className="text-sm font-medium text-foreground">
-                        Account ID
-                    </label>
-                    <input
-                        type="text"
-                        value={accountId}
-                        onChange={(e) => setAccountId(e.target.value)}
-                        required
-                        className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
-                    />
-                </div>
-                <div>
-                    <label className="text-sm font-medium text-foreground">
                         Access Key
                     </label>
                     <input
@@ -295,6 +300,48 @@ function AddProviderModal({
                         required
                         className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
+                    {(type === ProviderPlatformType.CANVAS_CLOUD ||
+                        type === ProviderPlatformType.CANVAS_OSS) && (
+                        <div className="mt-2 rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
+                            <p className="font-medium text-foreground">
+                                How to create a Canvas personal access token:
+                            </p>
+                            <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+                                <li>
+                                    Open{' '}
+                                    {baseUrl ? (
+                                        <a
+                                            href={`${baseUrl.replace(/\/$/, '')}/profile/settings`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary underline"
+                                        >
+                                            {baseUrl.replace(/\/$/, '')}
+                                            /profile/settings
+                                        </a>
+                                    ) : (
+                                        <span className="italic">
+                                            (enter Base URL above)
+                                            /profile/settings
+                                        </span>
+                                    )}{' '}
+                                    while logged in as an admin.
+                                </li>
+                                <li>
+                                    Scroll to <strong>Approved Integrations</strong>{' '}
+                                    and click <strong>+ New Access Token</strong>.
+                                </li>
+                                <li>
+                                    Give it a purpose (e.g. &quot;UnlockEd&quot;),
+                                    leave the expiry blank, then click{' '}
+                                    <strong>Generate Token</strong>.
+                                </li>
+                                <li>
+                                    Copy the generated token and paste it above.
+                                </li>
+                            </ol>
+                        </div>
+                    )}
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                     <Button

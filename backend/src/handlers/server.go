@@ -267,7 +267,6 @@ func oryConfig() *ory.Configuration {
 }
 
 const (
-	CachedUsers    string = "cache_users"
 	LibraryPaths   string = "library_paths"
 	OAuthState     string = "oauth_state"
 	LoginMetrics   string = "login_metrics"
@@ -282,7 +281,7 @@ func (srv *Server) setupNatsKvBuckets() error {
 		return err
 	}
 	buckets := map[string]nats.KeyValue{}
-	for _, bucket := range []string{CachedUsers, LibraryPaths, LoginMetrics, OAuthState, AdminLayer2, CanvasPrograms} {
+	for _, bucket := range []string{LibraryPaths, LoginMetrics, OAuthState, AdminLayer2, CanvasPrograms} {
 		kv, err := js.KeyValue(bucket)
 		if err != nil {
 			cfg := &nats.KeyValueConfig{
@@ -290,8 +289,6 @@ func (srv *Server) setupNatsKvBuckets() error {
 				History: 1,
 			}
 			switch bucket {
-			case CachedUsers:
-				cfg.TTL = time.Hour * 1
 			case OAuthState:
 				cfg.TTL = time.Minute * 10
 			case CanvasPrograms:

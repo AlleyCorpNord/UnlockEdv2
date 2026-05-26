@@ -110,7 +110,7 @@ func (srv *CanvasService) GetUsers(db *gorm.DB) ([]models.ImportUser, error) {
 			nameFirst = shortName
 			nameLast = name[0]
 		}
-		userId, _ := user["id"].(int64)
+		userId, _ := user["id"].(float64)
 		var count int64 = 0
 		err := db.Model(&models.ProviderUserMapping{}).Where("external_user_id = ?", fmt.Sprintf("%d", int(userId))).Where("provider_platform_id = ?", srv.ProviderPlatformID).Count(&count).Error
 		if err != nil {
@@ -156,7 +156,7 @@ func (srv *CanvasService) ImportCourses(db *gorm.DB) error {
 		return err
 	}
 	for _, course := range courses {
-		id := int(course["id"].(int64))
+		id := int(course["id"].(float64))
 		var count int64 = 0
 		log.Infof("importing course %d", id)
 		if db.Table("courses").Where("provider_platform_id = ?", srv.ProviderPlatformID).
@@ -486,7 +486,7 @@ func (srv *CanvasService) ImportActivityForCourse(coursePair map[string]any, db 
 		return err
 	}
 	for _, enrollment := range enrollments {
-		userId := fmt.Sprintf("%d", int(enrollment["user_id"].(int64)))
+		userId := fmt.Sprintf("%d", int(enrollment["user_id"].(float64)))
 		var userID uint
 		err := db.Model(models.ProviderUserMapping{}).Select("user_id").First(&userID, "provider_platform_id = ? AND external_user_id = ?", srv.ProviderPlatformID, userId).Error
 		if err != nil {

@@ -77,7 +77,13 @@ func (db *DB) UpdateProviderPlatform(platform *models.ProviderPlatform, id uint)
 		}
 	}
 	models.UpdateStruct(&existingPlatform, platform)
-	if err := db.Save(&existingPlatform).Error; err != nil {
+	save := db.Model(&existingPlatform)
+	if platform.AccessKey == "" {
+		// access_key was not changed — omit it so the AfterFind-decrypted value
+		// doesn't overwrite the encrypted bytes already stored in the DB
+		save = save.Omit("AccessKey")
+	}
+	if err := save.Save(&existingPlatform).Error; err != nil {
 		return nil, newUpdateDBError(err, "provider_platforms")
 	}
 	return &existingPlatform, nil

@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
@@ -112,7 +113,11 @@ func DecryptAccessKey(axxKey string) (string, error) {
 	//nolint:staticcheck // CFB mode preserved for backward compatibility with existing encrypted data
 	stream := cipher.NewCFBDecrypter(block, iv)
 	stream.XORKeyStream(ciphertext, ciphertext)
-	return string(ciphertext), nil
+	decrypted := string(ciphertext)
+	if !utf8.ValidString(decrypted) {
+		return "", fmt.Errorf("decrypted access key is not valid UTF-8 (APP_KEY mismatch or corrupted data)")
+	}
+	return decrypted, nil
 }
 
 func EncryptAccessKey(apiKey string) (string, error) {

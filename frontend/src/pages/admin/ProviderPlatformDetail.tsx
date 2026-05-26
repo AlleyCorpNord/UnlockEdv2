@@ -198,13 +198,16 @@ export default function ProviderPlatformDetail() {
                                 <UsersIcon className="size-4 mr-2" />
                                 Manage Users
                             </Button>
-                            <DropdownMenu>
+                            <DropdownMenu modal={false}>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline">
                                         <EllipsisVerticalIcon className="size-5" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
+                                <DropdownMenuContent
+                                    align="end"
+                                    className="bg-white"
+                                >
                                     <DropdownMenuItem
                                         onClick={() => {
                                             setEditProvider(provider);

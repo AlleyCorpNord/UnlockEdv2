@@ -26,7 +26,8 @@ import {
     ChevronDownIcon,
     ChevronRightIcon,
     ArrowPathIcon,
-    QuestionMarkCircleIcon
+    QuestionMarkCircleIcon,
+    ServerStackIcon
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -230,6 +231,15 @@ function AdminNav({ collapsed, isActive, onNavigate }: NavSectionProps) {
                     ]}
                 />
             )}
+
+            <NavLink
+                to="/learning-platforms"
+                icon={ServerStackIcon}
+                label="Learning Platforms"
+                active={isActive(['/learning-platforms'])}
+                collapsed={collapsed}
+                onClick={onNavigate}
+            />
 
             {hasFeature(user, FeatureAccess.OpenContentAccess) && (
                 <CollapsibleSection
