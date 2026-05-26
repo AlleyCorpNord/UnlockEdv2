@@ -8,7 +8,11 @@ import {
     User,
     UserImports,
     ServerResponseMany,
-    PaginationMeta
+    PaginationMeta,
+    MatchUsersResponse,
+    ConfirmedMatch,
+    ApplyMatchesRequest,
+    ApplyMatchesResponse,
 } from '@/types';
 import API from '@/api/api';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -43,6 +47,12 @@ export default function ProviderUserManagement() {
     const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
     const [mapSearch, setMapSearch] = useState('');
     const [mapSubmitting, setMapSubmitting] = useState(false);
+    const [matchState, setMatchState] = useState<MatchUsersResponse | null>(null);
+    const [matchLoading, setMatchLoading] = useState(false);
+    const [applySubmitting, setApplySubmitting] = useState(false);
+    const [removedConfirmed, setRemovedConfirmed] = useState<Set<string>>(new Set());
+    const [ambiguousSelections, setAmbiguousSelections] = useState<Record<string, number>>({});
+    const [unmatchedToCreate, setUnmatchedToCreate] = useState<Set<string>>(new Set());
 
     const [meta, setMeta] = useState<PaginationMeta>({
         current_page: 1,
@@ -101,6 +111,69 @@ export default function ProviderUserManagement() {
     const handleRefresh = () => {
         setCache(true);
         void mutate();
+    };
+
+    const handleAutoMatch = async () => {
+        setMatchLoading(true);
+        const res = await API.get<MatchUsersResponse>(
+            `actions/provider-platforms/${providerId}/match-users`
+        );
+        setMatchLoading(false);
+        if (res.success) {
+            setMatchState(res.data as MatchUsersResponse);
+            setRemovedConfirmed(new Set());
+            setAmbiguousSelections({});
+            setUnmatchedToCreate(new Set());
+        } else {
+            toast.error('Failed to load match results.');
+        }
+    };
+
+    const handleApplyMatches = async () => {
+        if (!matchState) return;
+        setApplySubmitting(true);
+
+        const confirmed: ConfirmedMatch[] = [
+            ...matchState.auto_confirmed
+                .filter((r) => !removedConfirmed.has(r.canvas_user.external_user_id))
+                .map((r) => ({
+                    canvas_user: r.canvas_user,
+                    unlocked_user_id: r.suggested_user!.id,
+                })),
+            ...matchState.ambiguous
+                .filter((r) => ambiguousSelections[r.canvas_user.external_user_id] != null)
+                .map((r) => ({
+                    canvas_user: r.canvas_user,
+                    unlocked_user_id: ambiguousSelections[r.canvas_user.external_user_id],
+                })),
+        ];
+
+        const toCreate: ProviderUser[] = matchState.unmatched.filter((u) =>
+            unmatchedToCreate.has(u.external_user_id)
+        );
+
+        const req: ApplyMatchesRequest = { confirmed, to_create: toCreate };
+
+        const res = await API.post<ApplyMatchesResponse, ApplyMatchesRequest>(
+            `actions/provider-platforms/${providerId}/apply-matches`,
+            req
+        );
+        setApplySubmitting(false);
+
+        if (res.success) {
+            const data = res.data as ApplyMatchesResponse;
+            if (data.failed.length > 0) {
+                toast.error(`Some users failed: ${data.failed.join(', ')}`);
+            } else {
+                toast.success(
+                    `Applied ${data.applied} mappings, created ${data.created} users.`
+                );
+            }
+            setMatchState(null);
+            void mutate();
+        } else {
+            toast.error('Failed to apply matches.');
+        }
     };
 
     const handleSearchChange = (val: string) => {
@@ -167,6 +240,7 @@ export default function ProviderUserManagement() {
             setUserToMap(undefined);
             setSelectedUserId(null);
             setMapSearch('');
+            setMatchState(null);
             void mutate();
             void mutateUnmapped();
         } else {
@@ -281,7 +355,7 @@ export default function ProviderUserManagement() {
                         placeholder="Search users..."
                         className="w-full sm:w-80"
                     />
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                         <Button
                             variant="outline"
                             onClick={handleRefresh}
@@ -289,6 +363,14 @@ export default function ProviderUserManagement() {
                         >
                             <ArrowPathIcon className="size-4 mr-1" />
                             Refresh
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => void handleAutoMatch()}
+                            disabled={matchLoading}
+                            className="text-foreground border-border"
+                        >
+                            {matchLoading ? 'Matching...' : 'Auto-match'}
                         </Button>
                         <Button
                             variant="outline"
@@ -308,15 +390,451 @@ export default function ProviderUserManagement() {
                     </div>
                 </div>
 
-                <DataTable
-                    columns={columns}
-                    data={providerUsers}
-                    keyExtractor={(user) => user.external_user_id}
-                    emptyMessage="No users found."
-                    page={meta.current_page}
-                    totalPages={meta.last_page}
-                    onPageChange={handlePageChange}
-                />
+                {matchState && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
+                        <div className="flex flex-wrap gap-2 text-sm">
+                            <span className="rounded-full bg-green-100 px-3 py-1 font-medium text-green-800">
+                                ✓ Auto-matched:{' '}
+                                {matchState.auto_confirmed.length -
+                                    removedConfirmed.size}
+                            </span>
+                            <span className="rounded-full bg-yellow-100 px-3 py-1 font-medium text-yellow-800">
+                                ~ Needs review: {matchState.ambiguous.length}
+                            </span>
+                            <span className="rounded-full bg-red-100 px-3 py-1 font-medium text-red-800">
+                                ✗ Unmatched: {matchState.unmatched.length}
+                            </span>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setMatchState(null)}
+                                className="text-foreground border-border"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={() => void handleApplyMatches()}
+                                disabled={
+                                    applySubmitting ||
+                                    (matchState.auto_confirmed.length -
+                                        removedConfirmed.size ===
+                                        0 &&
+                                        Object.keys(ambiguousSelections)
+                                            .length === 0 &&
+                                        unmatchedToCreate.size === 0)
+                                }
+                                className="bg-[#203622] text-white hover:bg-[#203622]/90"
+                            >
+                                {applySubmitting
+                                    ? 'Applying...'
+                                    : 'Apply Matches'}
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                {matchState ? (
+                    <div className="space-y-4">
+                        {/* Section A: Auto-confirmed */}
+                        <details className="rounded-lg border border-green-200 bg-green-50">
+                            <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium text-green-800">
+                                ✓ Auto-confirmed (
+                                {matchState.auto_confirmed.length -
+                                    removedConfirmed.size}{' '}
+                                matches) — click to review
+                            </summary>
+                            <div className="border-t border-green-200">
+                                {matchState.auto_confirmed.length === 0 ? (
+                                    <p className="p-4 text-sm text-muted-foreground">
+                                        No auto-confirmed matches.
+                                    </p>
+                                ) : (
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-green-200 text-left text-xs text-green-700">
+                                                <th className="px-4 py-2">
+                                                    Canvas user
+                                                </th>
+                                                <th className="px-4 py-2"></th>
+                                                <th className="px-4 py-2">
+                                                    UnlockEd user
+                                                </th>
+                                                <th className="px-4 py-2 text-right">
+                                                    Score
+                                                </th>
+                                                <th className="px-4 py-2"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {matchState.auto_confirmed.map(
+                                                (r) => {
+                                                    const removed =
+                                                        removedConfirmed.has(
+                                                            r.canvas_user
+                                                                .external_user_id
+                                                        );
+                                                    return (
+                                                        <tr
+                                                            key={
+                                                                r.canvas_user
+                                                                    .external_user_id
+                                                            }
+                                                            className={`border-b border-green-100 last:border-b-0 ${removed ? 'opacity-40 line-through' : ''}`}
+                                                        >
+                                                            <td className="px-4 py-2 font-medium text-foreground">
+                                                                {
+                                                                    r.canvas_user
+                                                                        .name_first
+                                                                }{' '}
+                                                                {
+                                                                    r.canvas_user
+                                                                        .name_last
+                                                                }
+                                                            </td>
+                                                            <td className="px-4 py-2 text-muted-foreground">
+                                                                →
+                                                            </td>
+                                                            <td className="px-4 py-2 text-foreground">
+                                                                {
+                                                                    r.suggested_user
+                                                                        ?.name_first
+                                                                }{' '}
+                                                                {
+                                                                    r.suggested_user
+                                                                        ?.name_last
+                                                                }
+                                                            </td>
+                                                            <td className="px-4 py-2 text-right text-muted-foreground">
+                                                                {Math.round(
+                                                                    r.score *
+                                                                        100
+                                                                )}
+                                                                %
+                                                            </td>
+                                                            <td className="px-4 py-2 text-right">
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() =>
+                                                                        setRemovedConfirmed(
+                                                                            (
+                                                                                prev
+                                                                            ) => {
+                                                                                const next =
+                                                                                    new Set(
+                                                                                        prev
+                                                                                    );
+                                                                                if (
+                                                                                    next.has(
+                                                                                        r.canvas_user.external_user_id
+                                                                                    )
+                                                                                ) {
+                                                                                    next.delete(
+                                                                                        r.canvas_user.external_user_id
+                                                                                    );
+                                                                                } else {
+                                                                                    next.add(
+                                                                                        r.canvas_user.external_user_id
+                                                                                    );
+                                                                                }
+                                                                                return next;
+                                                                            }
+                                                                        )
+                                                                    }
+                                                                    className="text-xs text-muted-foreground hover:text-destructive"
+                                                                >
+                                                                    {removed
+                                                                        ? 'Undo'
+                                                                        : '✕ Remove'}
+                                                                </Button>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                }
+                                            )}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </details>
+
+                        {/* Section B: Needs review */}
+                        <div className="rounded-lg border border-yellow-200 bg-yellow-50">
+                            <div className="px-4 py-3 text-sm font-medium text-yellow-800">
+                                ~ Needs review ({matchState.ambiguous.length})
+                            </div>
+                            <div className="border-t border-yellow-200">
+                                {matchState.ambiguous.length === 0 ? (
+                                    <p className="p-4 text-sm text-muted-foreground">
+                                        No ambiguous matches.
+                                    </p>
+                                ) : (
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-yellow-200 text-left text-xs text-yellow-700">
+                                                <th className="px-4 py-2">
+                                                    Canvas user
+                                                </th>
+                                                <th className="px-4 py-2">
+                                                    Suggested match
+                                                </th>
+                                                <th className="px-4 py-2 text-right">
+                                                    Score
+                                                </th>
+                                                <th className="px-4 py-2 text-right">
+                                                    Action
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {matchState.ambiguous.map((r) => {
+                                                const confirmed =
+                                                    ambiguousSelections[
+                                                        r.canvas_user
+                                                            .external_user_id
+                                                    ] != null;
+                                                return (
+                                                    <tr
+                                                        key={
+                                                            r.canvas_user
+                                                                .external_user_id
+                                                        }
+                                                        className="border-b border-yellow-100 last:border-b-0"
+                                                    >
+                                                        <td className="px-4 py-2 font-medium text-foreground">
+                                                            {
+                                                                r.canvas_user
+                                                                    .name_first
+                                                            }{' '}
+                                                            {
+                                                                r.canvas_user
+                                                                    .name_last
+                                                            }
+                                                        </td>
+                                                        <td className="px-4 py-2 text-foreground">
+                                                            {r.suggested_user
+                                                                ? `${r.suggested_user.name_first} ${r.suggested_user.name_last}`
+                                                                : '—'}
+                                                        </td>
+                                                        <td className="px-4 py-2 text-right text-muted-foreground">
+                                                            {Math.round(
+                                                                r.score * 100
+                                                            )}
+                                                            %
+                                                        </td>
+                                                        <td className="px-4 py-2 text-right">
+                                                            <div className="flex justify-end gap-1">
+                                                                {r.suggested_user && (
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant={
+                                                                            confirmed
+                                                                                ? 'default'
+                                                                                : 'outline'
+                                                                        }
+                                                                        onClick={() =>
+                                                                            setAmbiguousSelections(
+                                                                                (
+                                                                                    prev
+                                                                                ) => {
+                                                                                    if (
+                                                                                        confirmed
+                                                                                    ) {
+                                                                                        const next =
+                                                                                            {
+                                                                                                ...prev,
+                                                                                            };
+                                                                                        delete next[
+                                                                                            r.canvas_user.external_user_id
+                                                                                        ];
+                                                                                        return next;
+                                                                                    }
+                                                                                    return {
+                                                                                        ...prev,
+                                                                                        [r.canvas_user
+                                                                                            .external_user_id]:
+                                                                                            r
+                                                                                                .suggested_user!
+                                                                                                .id,
+                                                                                    };
+                                                                                }
+                                                                            )
+                                                                        }
+                                                                        className={
+                                                                            confirmed
+                                                                                ? 'bg-[#203622] text-white'
+                                                                                : 'text-foreground border-border'
+                                                                        }
+                                                                    >
+                                                                        {confirmed
+                                                                            ? '✓ Confirmed'
+                                                                            : 'Confirm'}
+                                                                    </Button>
+                                                                )}
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="ghost"
+                                                                    onClick={() => {
+                                                                        setUserToMap(
+                                                                            r.canvas_user
+                                                                        );
+                                                                        setSelectedUserId(
+                                                                            null
+                                                                        );
+                                                                        setMapSearch(
+                                                                            ''
+                                                                        );
+                                                                        setShowMapModal(
+                                                                            true
+                                                                        );
+                                                                    }}
+                                                                    className="text-foreground border-border"
+                                                                >
+                                                                    Change
+                                                                </Button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Section C: Unmatched */}
+                        <div className="rounded-lg border border-red-200 bg-red-50">
+                            <div className="px-4 py-3 text-sm font-medium text-red-800">
+                                ✗ Unmatched ({matchState.unmatched.length})
+                            </div>
+                            <div className="border-t border-red-200">
+                                {matchState.unmatched.length === 0 ? (
+                                    <p className="p-4 text-sm text-muted-foreground">
+                                        No unmatched users.
+                                    </p>
+                                ) : (
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b border-red-200 text-left text-xs text-red-700">
+                                                <th className="px-4 py-2">
+                                                    Canvas user
+                                                </th>
+                                                <th className="px-4 py-2">
+                                                    Username
+                                                </th>
+                                                <th className="px-4 py-2 text-right">
+                                                    Action
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {matchState.unmatched.map((u) => {
+                                                const queued =
+                                                    unmatchedToCreate.has(
+                                                        u.external_user_id
+                                                    );
+                                                return (
+                                                    <tr
+                                                        key={u.external_user_id}
+                                                        className="border-b border-red-100 last:border-b-0"
+                                                    >
+                                                        <td className="px-4 py-2 font-medium text-foreground">
+                                                            {u.name_first}{' '}
+                                                            {u.name_last}
+                                                        </td>
+                                                        <td className="px-4 py-2 text-muted-foreground">
+                                                            {u.username}
+                                                        </td>
+                                                        <td className="px-4 py-2 text-right">
+                                                            <div className="flex justify-end gap-1">
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant={
+                                                                        queued
+                                                                            ? 'default'
+                                                                            : 'outline'
+                                                                    }
+                                                                    onClick={() =>
+                                                                        setUnmatchedToCreate(
+                                                                            (
+                                                                                prev
+                                                                            ) => {
+                                                                                const next =
+                                                                                    new Set(
+                                                                                        prev
+                                                                                    );
+                                                                                if (
+                                                                                    next.has(
+                                                                                        u.external_user_id
+                                                                                    )
+                                                                                ) {
+                                                                                    next.delete(
+                                                                                        u.external_user_id
+                                                                                    );
+                                                                                } else {
+                                                                                    next.add(
+                                                                                        u.external_user_id
+                                                                                    );
+                                                                                }
+                                                                                return next;
+                                                                            }
+                                                                        )
+                                                                    }
+                                                                    className={
+                                                                        queued
+                                                                            ? 'bg-[#203622] text-white'
+                                                                            : 'text-foreground border-border'
+                                                                    }
+                                                                >
+                                                                    {queued
+                                                                        ? '✓ Will create'
+                                                                        : 'Create user'}
+                                                                </Button>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => {
+                                                                        setUserToMap(
+                                                                            u
+                                                                        );
+                                                                        setSelectedUserId(
+                                                                            null
+                                                                        );
+                                                                        setMapSearch(
+                                                                            ''
+                                                                        );
+                                                                        setShowMapModal(
+                                                                            true
+                                                                        );
+                                                                    }}
+                                                                    className="text-foreground border-border"
+                                                                >
+                                                                    Select user
+                                                                </Button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <DataTable
+                        columns={columns}
+                        data={providerUsers}
+                        keyExtractor={(user) => user.external_user_id}
+                        emptyMessage="No users found."
+                        page={meta.current_page}
+                        totalPages={meta.last_page}
+                        onPageChange={handlePageChange}
+                    />
+                )}
 
                 <FormModal
                     open={showMapModal}
