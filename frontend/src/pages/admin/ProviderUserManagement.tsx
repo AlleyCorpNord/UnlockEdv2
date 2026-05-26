@@ -669,7 +669,7 @@ export default function ProviderUserManagement() {
                             </div>
                         </div>
                     </div>
-                )}
+                ) : null}
 
                 <FormModal
                     open={showMapModal}
