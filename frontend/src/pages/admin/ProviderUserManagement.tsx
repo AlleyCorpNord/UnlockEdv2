@@ -8,6 +8,7 @@ import {
     User,
     UserImports,
     ServerResponseMany,
+    ServerResponseOne,
     MatchUsersResponse,
     ConfirmedMatch,
     ApplyMatchesRequest,
@@ -45,12 +46,12 @@ export default function ProviderUserManagement() {
         data: matchData,
         isLoading: matchLoading,
         mutate: mutateMatch
-    } = useSWR<MatchUsersResponse>(
+    } = useSWR<ServerResponseOne<MatchUsersResponse>>(
         providerId
             ? `/api/actions/provider-platforms/${providerId}/match-users`
             : null
     );
-    const matchState = matchData ?? null;
+    const matchState = matchData?.data ?? null;
 
     const { data: unmappedResp, mutate: mutateUnmapped } = useSWR<
         ServerResponseMany<User>
