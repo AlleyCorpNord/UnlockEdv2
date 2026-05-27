@@ -55,6 +55,71 @@ function ensureDraftEditorOpen(
     };
 }
 
+/** Funnel editor: one achievement row per visit, form expanded. */
+function toFunnelSingleRowSession(
+    session: TranscriptEntrySession,
+    committed: TranscriptEntry[],
+    options: { intent?: boolean; edit?: string | null }
+): TranscriptEntrySession {
+    if (options.intent) {
+        const opened = ensureDraftEditorOpen(session, committed);
+        const rowId = opened.expandedId ?? opened.rows[0]?.id;
+        const row =
+            opened.rows.find((r) => r.id === rowId) ??
+            findReusableBlankDraftRow(opened.rows, new Set(committed.map((e) => e.id))) ??
+            createEmptyTranscriptEntry();
+        const cloned = cloneTranscriptEntry(row);
+        return {
+            ...opened,
+            rows: [cloned],
+            expandedId: cloned.id,
+            lastPreviewId: cloned.id
+        };
+    }
+
+    if (options.edit) {
+        const fromSession = session.rows.find((r) => r.id === options.edit);
+        const fromCommitted = committed.find((e) => e.id === options.edit);
+        const row = fromSession ?? fromCommitted;
+        if (row) {
+            const cloned = cloneTranscriptEntry(row);
+            return {
+                ...session,
+                rows: [cloned],
+                expandedId: cloned.id,
+                lastPreviewId: cloned.id
+            };
+        }
+    }
+
+    if (session.rows.length === 0) {
+        const opened = ensureDraftEditorOpen(session, committed);
+        const row =
+            opened.rows.find((r) => r.id === opened.expandedId) ??
+            opened.rows[0] ??
+            createEmptyTranscriptEntry();
+        const cloned = cloneTranscriptEntry(row);
+        return {
+            ...opened,
+            rows: [cloned],
+            expandedId: cloned.id,
+            lastPreviewId: cloned.id
+        };
+    }
+
+    const preferredId =
+        session.expandedId ?? sortEntriesNewestFirst(session.rows)[0]?.id ?? null;
+    const row =
+        session.rows.find((r) => r.id === preferredId) ?? session.rows[0];
+    const cloned = cloneTranscriptEntry(row);
+    return {
+        ...session,
+        rows: [cloned],
+        expandedId: cloned.id,
+        lastPreviewId: cloned.id
+    };
+}
+
 interface DigitalTranscriptWysiwygEntryProps {
     base: string;
     formVariant: LearningRecordFormVariant;
@@ -64,6 +129,8 @@ interface DigitalTranscriptWysiwygEntryProps {
     deleteCommittedEntry: (id: string) => TranscriptEntrySession | null;
     /** Live session rows for PDF export (includes in-progress autosaved work). */
     onExportRowsChange?: (rows: TranscriptEntry[]) => void;
+    /** Funnel: register Back handler that commits session rows before navigate. */
+    onRegisterBackCommit?: (commit: () => void) => void;
 }
 
 export function DigitalTranscriptWysiwygEntry({
@@ -73,8 +140,10 @@ export function DigitalTranscriptWysiwygEntry({
     entries,
     upsertCommittedEntry,
     deleteCommittedEntry,
-    onExportRowsChange
+    onExportRowsChange,
+    onRegisterBackCommit
 }: DigitalTranscriptWysiwygEntryProps) {
+    const isFunnel = formVariant === 'funnel';
     const [searchParams, setSearchParams] = useSearchParams();
     const [session, setSession] = useState<TranscriptEntrySession | null>(null);
     const [doneErrorRowId, setDoneErrorRowId] = useState<string | null>(null);
@@ -104,7 +173,12 @@ export function DigitalTranscriptWysiwygEntry({
         let s = resolveInitialEntrySession();
         const committed = readTranscriptEntriesFromStorage();
 
-        if (intent) {
+        if (isFunnel) {
+            s = toFunnelSingleRowSession(s, committed, {
+                intent: intent || undefined,
+                edit: edit || null
+            });
+        } else if (intent) {
             s = ensureDraftEditorOpen(s, committed);
         } else if (edit && s.rows.some((r) => r.id === edit)) {
             s = { ...s, expandedId: edit, lastPreviewId: edit };
@@ -132,7 +206,29 @@ export function DigitalTranscriptWysiwygEntry({
             captureBaseline(s.expandedId, s.rows);
             prevExpandedIdRef.current = s.expandedId;
         }
-    }, [hydrated, searchParams, setSearchParams, captureBaseline]);
+    }, [hydrated, searchParams, setSearchParams, captureBaseline, isFunnel]);
+
+    const commitSessionRowsForBack = useCallback(() => {
+        const current = sessionRef.current;
+        if (!current) return;
+        let nextSession = current;
+        for (const row of current.rows) {
+            const saved: TranscriptEntry = {
+                ...row,
+                topSkills: row.topSkills.slice(0, TOP_SKILLS_MAX)
+            };
+            upsertCommittedEntry(saved);
+            nextSession = syncSessionRowsAfterUpsert(nextSession, saved);
+        }
+        writeEntrySessionToStorage(nextSession);
+        dispatchEntrySessionUpdated();
+        setSession(nextSession);
+    }, [upsertCommittedEntry]);
+
+    useEffect(() => {
+        if (!isFunnel || !onRegisterBackCommit) return;
+        onRegisterBackCommit(commitSessionRowsForBack);
+    }, [isFunnel, onRegisterBackCommit, commitSessionRowsForBack]);
 
     useEffect(() => {
         if (!session) return;
@@ -309,15 +405,17 @@ export function DigitalTranscriptWysiwygEntry({
                         <h1 className="text-base font-semibold tracking-tight text-foreground">
                             Your achievements
                         </h1>
-                        <button
-                            type="button"
-                            data-slot="transcript-add-achievement"
-                            onClick={handleAdd}
-                            className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-[#556830] transition-colors duration-150 hover:text-[#203622] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                        >
-                            <Plus className="size-4" aria-hidden />
-                            Add achievement
-                        </button>
+                        {!isFunnel && (
+                            <button
+                                type="button"
+                                data-slot="transcript-add-achievement"
+                                onClick={handleAdd}
+                                className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-[#556830] transition-colors duration-150 hover:text-[#203622] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                            >
+                                <Plus className="size-4" aria-hidden />
+                                Add achievement
+                            </button>
+                        )}
                     </div>
 
                     <div

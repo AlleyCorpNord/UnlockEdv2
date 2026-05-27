@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { useTranscriptDraft } from '@/hooks/useTranscriptDraft';
@@ -20,11 +20,17 @@ import { learningRecordResidentDisplayName } from './learningRecordResidentName'
 import { readLearningRecordExportRows } from './transcriptEntrySessionStorage';
 import type { TranscriptEntry } from '@/types/digital-transcript';
 
+const digitalTranscriptBackLinkClassName =
+    'group inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80';
+
 export default function DigitalTranscriptEntryPage() {
+    const navigate = useNavigate();
     const { pathname } = useLocation();
     const base = getDigitalTranscriptBasePath(pathname);
     setDigitalTranscriptStorageContext(base);
     const formVariant = getLearningRecordFormVariant(pathname);
+    const isFunnel = formVariant === 'funnel';
+    const backCommitRef = useRef<(() => void) | null>(null);
     const { hydrated, upsertCommittedEntry, deleteCommittedEntry, entries } = useTranscriptDraft();
     const { user } = useAuth();
     const residentName = learningRecordResidentDisplayName(user);
@@ -42,6 +48,15 @@ export default function DigitalTranscriptEntryPage() {
     const handleExportRowsChange = useCallback((rows: TranscriptEntry[]) => {
         setExportRows(rows);
     }, []);
+
+    const handleRegisterBackCommit = useCallback((commit: () => void) => {
+        backCommitRef.current = commit;
+    }, []);
+
+    const handleBack = useCallback(() => {
+        backCommitRef.current?.();
+        navigate(base);
+    }, [navigate, base]);
 
     const handleDownload = useCallback(async () => {
         const rows =
@@ -123,7 +138,24 @@ export default function DigitalTranscriptEntryPage() {
                     data-slot="digital-transcript-entry-toolbar"
                     className="flex shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-background px-4 py-3 print:hidden"
                 >
-                    <DigitalTranscriptBackLink to={base}>Back</DigitalTranscriptBackLink>
+                    {isFunnel ? (
+                        <button
+                            type="button"
+                            data-slot="digital-transcript-back"
+                            className={digitalTranscriptBackLinkClassName}
+                            onClick={handleBack}
+                        >
+                            <span
+                                className="inline-block transition-transform group-hover:-translate-x-0.5"
+                                aria-hidden
+                            >
+                                ←
+                            </span>
+                            Back
+                        </button>
+                    ) : (
+                        <DigitalTranscriptBackLink to={base}>Back</DigitalTranscriptBackLink>
+                    )}
                     <Button
                         type="button"
                         variant="outline"
@@ -151,6 +183,7 @@ export default function DigitalTranscriptEntryPage() {
                         upsertCommittedEntry={upsertCommittedEntry}
                         deleteCommittedEntry={deleteCommittedEntry}
                         onExportRowsChange={handleExportRowsChange}
+                        onRegisterBackCommit={isFunnel ? handleRegisterBackCommit : undefined}
                     />
                 </div>
             </div>
