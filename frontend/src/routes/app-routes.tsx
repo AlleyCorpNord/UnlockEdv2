@@ -106,7 +106,7 @@ const nonAdminLoggedInRoutes = declareAuthenticatedRoutes([
     {
         path: 'learning-record-funnel/entry',
         element: <DigitalTranscriptEntryPage />,
-        handle: { title: 'Log your achievements' }
+        handle: { title: 'Add your achievement' }
     },
     {
         path: 'learning-record-categories',
@@ -116,7 +116,7 @@ const nonAdminLoggedInRoutes = declareAuthenticatedRoutes([
     {
         path: 'learning-record-categories/entry',
         element: <DigitalTranscriptEntryPage />,
-        handle: { title: 'Log your achievements' }
+        handle: { title: 'Add your achievement' }
     },
     {
         path: 'my-transcript-a',

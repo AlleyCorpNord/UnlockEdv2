@@ -177,7 +177,7 @@ export function writeTranscriptEntriesToStorage(list: TranscriptEntry[]) {
     localStorage.setItem(getDigitalTranscriptStorageKeys().entries, JSON.stringify(list));
 }
 
-function entryPayloadEqual(a: TranscriptEntry, b: TranscriptEntry): boolean {
+export function entryPayloadEqual(a: TranscriptEntry, b: TranscriptEntry): boolean {
     return (
         a.programName === b.programName &&
         a.completionDate === b.completionDate &&

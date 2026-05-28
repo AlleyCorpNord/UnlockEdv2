@@ -30,11 +30,14 @@ interface AchievementRowProps {
     isExpanded: boolean;
     onToggleExpand: () => void;
     onPatch: (patch: Partial<TranscriptEntry>) => void;
-    onCancel: () => void;
-    onDone: () => void;
-    showDoneErrors: boolean;
+    onCancel?: () => void;
+    onDone?: () => void;
+    showDoneErrors?: boolean;
+    showSaveErrors?: boolean;
     showDelete?: boolean;
     onDeleteRequest?: () => void;
+    activeStep?: number;
+    onActiveStepChange?: (step: number) => void;
 }
 
 export function AchievementRow({
@@ -45,10 +48,31 @@ export function AchievementRow({
     onPatch,
     onCancel,
     onDone,
-    showDoneErrors,
+    showDoneErrors = false,
+    showSaveErrors = false,
     showDelete,
-    onDeleteRequest
+    onDeleteRequest,
+    activeStep = 0,
+    onActiveStepChange
 }: AchievementRowProps) {
+    if (formVariant === 'funnel') {
+        return (
+            <div
+                data-slot="achievement-row"
+                data-achievement-id={entry.id}
+                className="shrink-0 overflow-hidden px-3 pb-3"
+            >
+                <AchievementForm
+                    entry={entry}
+                    onChange={onPatch}
+                    showSaveErrors={showSaveErrors}
+                    activeStep={activeStep}
+                    onActiveStepChange={onActiveStepChange ?? (() => {})}
+                />
+            </div>
+        );
+    }
+
     const title = entry.programName.trim() || 'Untitled achievement';
     const filled = countEditorFormSlots(entry);
     const total = editorFormSlotsTotal();
@@ -110,34 +134,16 @@ export function AchievementRow({
                 </span>
             </button>
             <CollapsibleContent forceMount className={cn(!isExpanded && 'hidden')}>
-                <div
-                    className={cn(
-                        'border-t border-black/6 px-3 pb-3 pt-3',
-                        'bg-background',
-                        formVariant !== 'categories' && 'pt-1'
-                    )}
-                >
-                    {formVariant === 'categories' ? (
-                        <AchievementFormCategories
-                            entry={entry}
-                            onChange={onPatch}
-                            onCancel={onCancel}
-                            onDone={onDone}
-                            showDoneErrors={showDoneErrors}
-                            showDelete={showDelete}
-                            onDeleteRequest={onDeleteRequest}
-                        />
-                    ) : (
-                        <AchievementForm
-                            entry={entry}
-                            onChange={onPatch}
-                            onCancel={onCancel}
-                            onDone={onDone}
-                            showDoneErrors={showDoneErrors}
-                            showDelete={showDelete}
-                            onDeleteRequest={onDeleteRequest}
-                        />
-                    )}
+                <div className="border-t border-black/6 bg-background px-3 pb-3 pt-3">
+                    <AchievementFormCategories
+                        entry={entry}
+                        onChange={onPatch}
+                        onCancel={onCancel ?? (() => {})}
+                        onDone={onDone ?? (() => {})}
+                        showDoneErrors={showDoneErrors}
+                        showDelete={showDelete}
+                        onDeleteRequest={onDeleteRequest}
+                    />
                 </div>
             </CollapsibleContent>
         </Collapsible>

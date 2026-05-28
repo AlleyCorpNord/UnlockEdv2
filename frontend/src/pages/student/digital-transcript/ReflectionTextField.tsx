@@ -6,6 +6,7 @@ import {
     NUDGE_TONE_CLASSES,
     nudgeTrackFillRatio,
     type ReflectionTextFieldKey,
+    type ReflectionTextNudge,
     REFLECTION_TEXT_NUDGES
 } from './transcriptReflectionConfig';
 
@@ -15,10 +16,18 @@ interface ReflectionTextFieldProps {
     value: string;
     onChange: (v: string) => void;
     fieldKey: ReflectionTextFieldKey;
+    nudge?: ReflectionTextNudge;
 }
 
-export function ReflectionTextField({ id, label, value, onChange, fieldKey }: ReflectionTextFieldProps) {
-    const nudge = REFLECTION_TEXT_NUDGES[fieldKey];
+export function ReflectionTextField({
+    id,
+    label,
+    value,
+    onChange,
+    fieldKey,
+    nudge: nudgeOverride
+}: ReflectionTextFieldProps) {
+    const nudge = nudgeOverride ?? REFLECTION_TEXT_NUDGES[fieldKey];
     const len = value.length;
     const tone = getReflectionNudgeTone(len, nudge);
     const toneCls = NUDGE_TONE_CLASSES[tone];
@@ -60,7 +69,13 @@ export function ReflectionTextField({ id, label, value, onChange, fieldKey }: Re
                 </div>
             </div>
             <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                <p className="max-w-prose text-xs leading-relaxed text-muted-foreground">{nudge.hint}</p>
+                {nudge.hint ? (
+                    <p className="max-w-prose text-xs leading-relaxed text-muted-foreground">
+                        {nudge.hint}
+                    </p>
+                ) : (
+                    <span className="hidden sm:block sm:flex-1" aria-hidden />
+                )}
                 <p
                     className={cn(
                         'shrink-0 text-right text-xs tabular-nums sm:min-w-[5.5rem]',

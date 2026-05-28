@@ -1,4 +1,4 @@
-import type { TranscriptDraft } from '@/types/digital-transcript';
+import type { TranscriptDraft, TranscriptEntry } from '@/types/digital-transcript';
 
 export const TOP_SKILLS_MAX = 5;
 
@@ -9,7 +9,8 @@ export type ReflectionTextFieldKey =
     | 'goalConnection'
     | 'standoutMoment'
     | 'adviceToPeer'
-    | 'oneSentence';
+    | 'oneSentence'
+    | 'topSkillsParagraph';
 
 /** Answer fields only (metadata: programName, completionDate). */
 export type ReflectionAnswerKey = keyof Pick<
@@ -42,6 +43,13 @@ export interface ReflectionTextNudge {
     recommendedMax: number;
     hint: string;
 }
+
+const FUNNEL_TEXT_NUDGE_200: ReflectionTextNudge = {
+    maxLength: 200,
+    recommendedMin: 0,
+    recommendedMax: 200,
+    hint: ''
+};
 
 export const REFLECTION_TEXT_NUDGES: Record<ReflectionTextFieldKey, ReflectionTextNudge> = {
     whatMadeYouFinish: {
@@ -79,7 +87,8 @@ export const REFLECTION_TEXT_NUDGES: Record<ReflectionTextFieldKey, ReflectionTe
         recommendedMin: 60,
         recommendedMax: 140,
         hint: 'This line becomes the headline on your record card.'
-    }
+    },
+    topSkillsParagraph: FUNNEL_TEXT_NUDGE_200
 };
 
 /** Live document preview — section labels (layout order is handled in the preview component). */
@@ -187,6 +196,120 @@ export const REFLECTION_STEPS_FUNNEL_ORDER: readonly ReflectionAnswerKey[] = [
     'adviceToPeer',
     'oneSentence'
 ] as const;
+
+/** Funnel stepped form — field keys per section (metadata keys on step 0 only). */
+export type FunnelStepField =
+    | 'programName'
+    | 'completionDate'
+    | ReflectionAnswerKey;
+
+export interface FunnelFormStepConfig {
+    id: string;
+    title: string;
+    fields: readonly FunnelStepField[];
+}
+
+export const FUNNEL_FORM_STEPS: readonly FunnelFormStepConfig[] = [
+    {
+        id: 'achievement',
+        title: 'My Achievement',
+        fields: ['programName', 'completionDate', 'oneSentence', 'whatMadeYouFinish']
+    },
+    {
+        id: 'experience',
+        title: 'My Experience',
+        fields: ['pride', 'standoutMoment', 'adviceToPeer']
+    },
+    {
+        id: 'future',
+        title: 'My Future',
+        fields: ['confidence', 'topSkills', 'goalConnection']
+    }
+] as const;
+
+export const FUNNEL_FORM_STEP_COUNT = FUNNEL_FORM_STEPS.length;
+
+/** Funnel editor — 200-char limits for all paragraph fields. */
+export const FUNNEL_REFLECTION_TEXT_NUDGES: Record<
+    Exclude<ReflectionTextFieldKey, 'topSkillsParagraph'> | 'topSkillsParagraph',
+    ReflectionTextNudge
+> = {
+    oneSentence: {
+        ...FUNNEL_TEXT_NUDGE_200,
+        hint: 'This line becomes the headline on your record card.'
+    },
+    whatMadeYouFinish: FUNNEL_TEXT_NUDGE_200,
+    pride: FUNNEL_TEXT_NUDGE_200,
+    standoutMoment: FUNNEL_TEXT_NUDGE_200,
+    adviceToPeer: FUNNEL_TEXT_NUDGE_200,
+    goalConnection: FUNNEL_TEXT_NUDGE_200,
+    topSkillsParagraph: FUNNEL_TEXT_NUDGE_200
+};
+
+export function funnelStepFieldLabel(field: FunnelStepField): string {
+    switch (field) {
+        case 'programName':
+            return 'Program name';
+        case 'completionDate':
+            return 'Completion date';
+        case 'oneSentence':
+            return 'How would you explain this program in one sentence?';
+        case 'whatMadeYouFinish':
+            return 'What made you finish it?';
+        case 'pride':
+            return 'How has completing this changed how you feel about yourself or how you show up for others?';
+        case 'standoutMoment':
+            return 'Was there a moment or someone from this program that stood out for you?';
+        case 'adviceToPeer':
+            return "What's one thing you'd tell another resident about this program?";
+        case 'confidence':
+            return 'How confident do you feel about your future since completing this program?';
+        case 'topSkills':
+            return 'What new skill or knowledge did this program give you?';
+        case 'goalConnection':
+            return "What does this connect to for a goal, job, or career you're working toward?";
+        default:
+            return '';
+    }
+}
+
+function funnelFieldAnswered(entry: TranscriptEntry, field: FunnelStepField): boolean {
+    if (field === 'programName') return Boolean(entry.programName.trim());
+    if (field === 'completionDate') return Boolean(entry.completionDate.trim());
+    if (field === 'confidence') return /^[1-5]$/.test(entry.confidence.trim());
+    if (field === 'topSkills') {
+        return entry.topSkills.length > 0 && Boolean(entry.topSkills[0]?.trim());
+    }
+    return Boolean(entry[field].trim());
+}
+
+/** True when every field in the funnel step has a non-empty answer. */
+export function isFunnelStepComplete(stepIndex: number, entry: TranscriptEntry): boolean {
+    const step = FUNNEL_FORM_STEPS[stepIndex];
+    if (!step) return false;
+    return step.fields.every((field) => funnelFieldAnswered(entry, field));
+}
+
+export const FUNNEL_FORM_FIELD_TOTAL = FUNNEL_FORM_STEPS.reduce(
+    (sum, step) => sum + step.fields.length,
+    0
+);
+
+export function countFunnelStepFieldsAnswered(
+    stepIndex: number,
+    entry: TranscriptEntry
+): number {
+    const step = FUNNEL_FORM_STEPS[stepIndex];
+    if (!step) return 0;
+    return step.fields.filter((field) => funnelFieldAnswered(entry, field)).length;
+}
+
+export function countFunnelFieldsAnswered(entry: TranscriptEntry): number {
+    return FUNNEL_FORM_STEPS.reduce(
+        (sum, _, index) => sum + countFunnelStepFieldsAnswered(index, entry),
+        0
+    );
+}
 
 export interface ReflectionCategorySection {
     id: string;

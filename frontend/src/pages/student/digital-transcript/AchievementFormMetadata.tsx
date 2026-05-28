@@ -6,7 +6,9 @@ import { cn } from '@/lib/utils';
 interface AchievementFormMetadataProps {
     entry: TranscriptEntry;
     onChange: (patch: Partial<TranscriptEntry>) => void;
-    showDoneErrors: boolean;
+    showSaveErrors?: boolean;
+    /** Categories variant — alias for showSaveErrors. */
+    showDoneErrors?: boolean;
     /** When true, adds a bottom border to separate metadata from reflection sections. */
     showSectionDivider?: boolean;
 }
@@ -14,9 +16,11 @@ interface AchievementFormMetadataProps {
 export function AchievementFormMetadata({
     entry,
     onChange,
+    showSaveErrors,
     showDoneErrors,
     showSectionDivider = false
 }: AchievementFormMetadataProps) {
+    const showErrors = showSaveErrors ?? showDoneErrors ?? false;
     const programOk = Boolean(entry.programName.trim());
     const dateOk = Boolean(entry.completionDate.trim());
 
@@ -33,12 +37,14 @@ export function AchievementFormMetadata({
                     value={entry.programName}
                     onChange={(e) => onChange({ programName: e.target.value })}
                     placeholder="e.g. GED prep, welding fundamentals"
-                    aria-invalid={showDoneErrors && !programOk}
+                    aria-invalid={showErrors && !programOk}
                     className="h-10 border-border/80 bg-muted/40"
                 />
-                {showDoneErrors && !programOk ? (
+                {showErrors && !programOk ? (
                     <p className="text-sm text-destructive" role="alert">
-                        Add a program or course name to continue.
+                        {showSaveErrors
+                            ? 'Please enter a program name to save your achievement.'
+                            : 'Add a program or course name to continue.'}
                     </p>
                 ) : null}
             </div>
@@ -51,12 +57,14 @@ export function AchievementFormMetadata({
                     data-slot="transcript-completion-date"
                     value={entry.completionDate}
                     onChange={(e) => onChange({ completionDate: e.target.value })}
-                    aria-invalid={showDoneErrors && !dateOk}
+                    aria-invalid={showErrors && !dateOk}
                     className="h-10 border-border/80 bg-muted/40"
                 />
-                {showDoneErrors && !dateOk ? (
+                {showErrors && !dateOk ? (
                     <p className="text-sm text-destructive" role="alert">
-                        Add a completion date to continue.
+                        {showSaveErrors
+                            ? 'Please add a completion date to save your achievement.'
+                            : 'Add a completion date to continue.'}
                     </p>
                 ) : null}
             </div>
