@@ -82,6 +82,17 @@ export function hasFilledNarrativeSections(source: LearningRecordDocumentSource)
     );
 }
 
+/** Funnel preview — all reflection fields live in the right column. */
+export function hasFilledFunnelReflectionSections(
+    source: LearningRecordDocumentSource
+): boolean {
+    return (
+        hasFilledNarrativeSections(source) ||
+        isConfidenceSectionFilled(source) ||
+        isSkillsSectionFilled(source)
+    );
+}
+
 export function hasFilledMetadataSections(source: LearningRecordDocumentSource): boolean {
     return (
         isProgramSectionFilled(source) ||
@@ -89,6 +100,11 @@ export function hasFilledMetadataSections(source: LearningRecordDocumentSource):
         isConfidenceSectionFilled(source) ||
         isSkillsSectionFilled(source)
     );
+}
+
+/** Funnel preview — left column is program and completion date only. */
+export function hasFilledFunnelMetadataSections(source: LearningRecordDocumentSource): boolean {
+    return isProgramSectionFilled(source) || isCompletedSectionFilled(source);
 }
 
 /** How many of the 8 reflection prompts have a meaningful answer (per-achievement readiness). */

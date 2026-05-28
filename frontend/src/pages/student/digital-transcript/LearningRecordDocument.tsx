@@ -9,6 +9,7 @@ import {
 import {
     countAnsweredReflections,
     getLearningRecordPreviewState,
+    hasFilledFunnelReflectionSections,
     hasFilledMetadataSections,
     hasFilledNarrativeSections,
     isCompletedSectionFilled,
@@ -18,7 +19,10 @@ import {
     reflectionSlotsTotal,
     type LearningRecordDocumentSource
 } from './learningRecordDocumentModel';
-import { LearningRecordDocumentNarrative } from './LearningRecordDocumentNarrative';
+import {
+    LearningRecordDocumentNarrative,
+    type LearningRecordDocumentVariant
+} from './LearningRecordDocumentNarrative';
 
 function formatCompletedLong(dateStr: string): string | null {
     if (!dateStr.trim()) return null;
@@ -34,12 +38,12 @@ function confidenceSegments(level: string): number {
     return Number(level);
 }
 
-/** Scan + narrative section labels — 11px caps, document rhythm */
+/** Scan + narrative section labels — 11px sentence case, document rhythm */
 function SectionLabel({ id, children }: { id: string; children: ReactNode }) {
     return (
         <h3
             id={id}
-            className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
+            className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground"
         >
             {children}
         </h3>
@@ -88,13 +92,18 @@ function SkeletonSkillPills() {
 
 type EmptyPreviewVariant = 'placeholder' | 'skeleton';
 export type LearningRecordDocumentLayout = 'default' | 'record';
+export type { LearningRecordDocumentVariant };
 
 interface LearningRecordDocumentProps {
     source: LearningRecordDocumentSource;
+    /** Resident display name for funnel achievement header (not from form data). */
+    residentName?: string;
     /** When false, hides the per-achievement readiness row (e.g. compact thumbnails). */
     showReadiness?: boolean;
     /** `record` — stacked program cards in the achievements-record preview. */
     layout?: LearningRecordDocumentLayout;
+    /** Funnel entry — section-ordered right column; program/date only on the left. */
+    documentVariant?: LearningRecordDocumentVariant;
     /** Extra classes on the root article (e.g. flex layout from parent card). */
     className?: string;
     /**
@@ -110,28 +119,45 @@ interface LearningRecordDocumentProps {
 
 export function LearningRecordDocument({
     source,
+    residentName = '',
     showReadiness = true,
     layout = 'default',
+    documentVariant = 'default',
     className,
     emptyAnswerLabel,
     emptyPreviewVariant = 'placeholder',
     filledSectionsOnly = false
 }: LearningRecordDocumentProps) {
     const state = getLearningRecordPreviewState(source);
+    const isFunnel = documentVariant === 'funnel';
     const isRecord = layout === 'record';
     const labels = isRecord ? LEARNING_RECORD_PREVIEW_LABELS : DOCUMENT_PREVIEW_LABELS;
     const emptyPh = emptyAnswerLabel?.trim();
     const skeletonEmpty = !filledSectionsOnly && emptyPreviewVariant === 'skeleton';
     const showAllNarrativeSections =
-        !filledSectionsOnly && (state !== 'empty' || Boolean(emptyPh) || skeletonEmpty);
+        !isFunnel &&
+        !filledSectionsOnly &&
+        (state !== 'empty' || Boolean(emptyPh) || skeletonEmpty);
 
     const showProgram = !filledSectionsOnly || isProgramSectionFilled(source);
     const showCompleted = !filledSectionsOnly || isCompletedSectionFilled(source);
-    const showConfidence = !filledSectionsOnly || isConfidenceSectionFilled(source);
-    const showSkills = !filledSectionsOnly || isSkillsSectionFilled(source);
-    const showMetadataColumn = !filledSectionsOnly || hasFilledMetadataSections(source);
-    const showNarrativeColumn = !filledSectionsOnly || hasFilledNarrativeSections(source);
-    const singleColumn = filledSectionsOnly && (showMetadataColumn !== showNarrativeColumn);
+    const showConfidence =
+        !isFunnel && (!filledSectionsOnly || isConfidenceSectionFilled(source));
+    const showSkills = !isFunnel && (!filledSectionsOnly || isSkillsSectionFilled(source));
+    const showMetadataColumn =
+        !isFunnel &&
+        (!filledSectionsOnly || hasFilledMetadataSections(source));
+    const showFunnelHeader =
+        isFunnel &&
+        (Boolean(residentName.trim()) ||
+            showProgram ||
+            showCompleted ||
+            !filledSectionsOnly);
+    const showNarrativeColumn = isFunnel
+        ? !filledSectionsOnly || hasFilledFunnelReflectionSections(source)
+        : !filledSectionsOnly || hasFilledNarrativeSections(source);
+    const singleColumn =
+        filledSectionsOnly && (showMetadataColumn !== showNarrativeColumn) && !isFunnel;
 
     function EmptySlot({ fallback, skeleton }: { fallback: ReactNode; skeleton: ReactNode }) {
         if (skeletonEmpty) return <>{skeleton}</>;
@@ -144,6 +170,35 @@ export function LearningRecordDocument({
     const seg = confidenceSegments(source.confidence);
     const dateShown = formatCompletedLong(source.completionDate);
     const headlineFilled = Boolean(source.oneSentence.trim());
+    const residentDisplayName = residentName.trim();
+
+    const narrative = (
+        <LearningRecordDocumentNarrative
+            source={source}
+            documentVariant={documentVariant}
+            isRecord={isRecord}
+            labels={labels}
+            headlineFilled={headlineFilled}
+            showAllNarrativeSections={showAllNarrativeSections}
+            showEmptyHint={
+                !filledSectionsOnly &&
+                state === 'empty' &&
+                !emptyPh &&
+                !skeletonEmpty &&
+                !isRecord
+            }
+            skeletonEmpty={skeletonEmpty}
+            filledSectionsOnly={filledSectionsOnly}
+            emptyPh={emptyPh}
+            answered={answered}
+            totalSlots={totalSlots}
+            state={state}
+            EmptySlot={EmptySlot}
+            PlaceholderText={PlaceholderText}
+            SkeletonHeadline={SkeletonHeadline}
+            SkeletonLines={SkeletonLines}
+        />
+    );
 
     return (
         <article
@@ -167,6 +222,78 @@ export function LearningRecordDocument({
                 </div>
             ) : null}
 
+            {isFunnel ? (
+                <>
+                    {showFunnelHeader ? (
+                        <header
+                            data-slot="funnel-achievement-header"
+                            className="shrink-0 space-y-3 border-b border-border/60 px-4 py-4"
+                        >
+                            {residentDisplayName || !filledSectionsOnly ? (
+                                <p className="text-base font-medium text-foreground">
+                                    {residentDisplayName || (
+                                        <PlaceholderText>Resident name</PlaceholderText>
+                                    )}
+                                </p>
+                            ) : null}
+                            {showProgram || showCompleted ? (
+                                <div className="flex items-start justify-between gap-4">
+                                    {showProgram ? (
+                                        <div className="min-w-0 flex-1 space-y-1">
+                                            <SectionLabel id="lr-funnel-program">
+                                                {labels.program}
+                                            </SectionLabel>
+                                            <p className="text-sm text-foreground">
+                                                {source.programName.trim() ? (
+                                                    source.programName.trim()
+                                                ) : (
+                                                    <EmptySlot
+                                                        fallback={
+                                                            <PlaceholderText>Your program</PlaceholderText>
+                                                        }
+                                                        skeleton={
+                                                            <SkeletonBar className="inline-block h-3.5 w-40" />
+                                                        }
+                                                    />
+                                                )}
+                                            </p>
+                                        </div>
+                                    ) : null}
+                                    {showCompleted ? (
+                                        <div
+                                            className={cn(
+                                                'shrink-0 space-y-1',
+                                                !showProgram && 'ml-auto'
+                                            )}
+                                        >
+                                            <SectionLabel id="lr-funnel-completed">
+                                                {labels.completed}
+                                            </SectionLabel>
+                                            <p className="text-sm text-foreground">
+                                                {dateShown != null && dateShown !== '' ? (
+                                                    dateShown
+                                                ) : (
+                                                    <EmptySlot
+                                                        fallback={<PlaceholderText>Date</PlaceholderText>}
+                                                        skeleton={
+                                                            <SkeletonBar className="inline-block h-3.5 w-36" />
+                                                        }
+                                                    />
+                                                )}
+                                            </p>
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ) : null}
+                        </header>
+                    ) : null}
+                    {(showNarrativeColumn || !filledSectionsOnly) && (
+                        <div className="flex min-w-0 flex-1 flex-col px-4 pb-4 pt-3">
+                            {narrative}
+                        </div>
+                    )}
+                </>
+            ) : (
             <div
                 className={cn(
                     'grid min-w-0 flex-1 grid-cols-1',
@@ -272,34 +399,10 @@ export function LearningRecordDocument({
                 </div>
                 ) : null}
 
-                {showNarrativeColumn ? (
-                <LearningRecordDocumentNarrative
-                    source={source}
-                    isRecord={isRecord}
-                    labels={labels}
-                    headlineFilled={headlineFilled}
-                    showAllNarrativeSections={showAllNarrativeSections}
-                    showEmptyHint={
-                        !filledSectionsOnly &&
-                        state === 'empty' &&
-                        !emptyPh &&
-                        !skeletonEmpty &&
-                        !isRecord
-                    }
-                    skeletonEmpty={skeletonEmpty}
-                    filledSectionsOnly={filledSectionsOnly}
-                    emptyPh={emptyPh}
-                    answered={answered}
-                    totalSlots={totalSlots}
-                    state={state}
-                    EmptySlot={EmptySlot}
-                    PlaceholderText={PlaceholderText}
-                    SkeletonHeadline={SkeletonHeadline}
-                    SkeletonLines={SkeletonLines}
-                />
-                ) : null}
+                {showNarrativeColumn ? narrative : null}
 
             </div>
+            )}
 
             {source.confidence.trim() && /^[1-5]$/.test(source.confidence) ? (
                 <p className="sr-only">{confidenceScaleLabel(source.confidence)}</p>

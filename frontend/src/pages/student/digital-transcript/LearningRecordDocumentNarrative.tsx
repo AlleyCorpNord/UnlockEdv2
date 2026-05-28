@@ -1,6 +1,14 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
-import { DOCUMENT_PREVIEW_LABELS, LEARNING_RECORD_PREVIEW_LABELS } from './transcriptReflectionConfig';
+import { ConfidenceSegmentedControl } from './ConfidenceSegmentedControl';
+import {
+    DOCUMENT_PREVIEW_LABELS,
+    FUNNEL_PREVIEW_LABELS,
+    FUNNEL_PREVIEW_SECTIONS,
+    funnelReflectionFieldAnswered,
+    LEARNING_RECORD_PREVIEW_LABELS,
+    type ReflectionAnswerKey
+} from './transcriptReflectionConfig';
 import {
     isAdviceSectionFilled,
     isConnectsSectionFilled,
@@ -18,7 +26,7 @@ function SectionLabel({ id, children }: { id: string; children: ReactNode }) {
     return (
         <h3
             id={id}
-            className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
+            className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground"
         >
             {children}
         </h3>
@@ -27,8 +35,11 @@ function SectionLabel({ id, children }: { id: string; children: ReactNode }) {
 
 type NarrativeLabels = typeof DOCUMENT_PREVIEW_LABELS | typeof LEARNING_RECORD_PREVIEW_LABELS;
 
+export type LearningRecordDocumentVariant = 'default' | 'funnel';
+
 interface LearningRecordDocumentNarrativeProps {
     source: LearningRecordDocumentSource;
+    documentVariant?: LearningRecordDocumentVariant;
     isRecord: boolean;
     labels: NarrativeLabels;
     headlineFilled: boolean;
@@ -46,8 +57,82 @@ interface LearningRecordDocumentNarrativeProps {
     SkeletonLines: (props: { count?: number }) => ReactNode;
 }
 
+function funnelSkillsText(source: LearningRecordDocumentSource): string {
+    return source.topSkills.filter(Boolean).join(' ').trim();
+}
+
+function funnelFieldText(source: LearningRecordDocumentSource, key: ReflectionAnswerKey): string {
+    if (key === 'topSkills') return funnelSkillsText(source);
+    if (key === 'confidence') return source.confidence.trim();
+    return source[key].trim();
+}
+
+function FunnelPreviewNarrative({ source }: { source: LearningRecordDocumentSource }) {
+    return (
+        <div className="flex min-w-0 flex-col gap-3">
+            {FUNNEL_PREVIEW_SECTIONS.map((section) => {
+                const sectionHasAnswers = section.fields.some((field) =>
+                    funnelReflectionFieldAnswered(source, field)
+                );
+                if (!sectionHasAnswers) return null;
+
+                return (
+                    <div key={section.id} className="space-y-3">
+                        <div className="my-3 flex items-center gap-3 break-inside-avoid">
+                            <span
+                                id={`lr-funnel-section-${section.id}`}
+                                className="whitespace-nowrap text-xs font-medium uppercase tracking-widest text-black"
+                            >
+                                {section.title}
+                            </span>
+                            <div className="flex-1 border-t border-border/60" />
+                        </div>
+
+                        {section.fields.map((field) => {
+                            if (!funnelReflectionFieldAnswered(source, field)) return null;
+
+                            const labelId = `lr-funnel-field-${field}`;
+                            const caption = FUNNEL_PREVIEW_LABELS[field];
+
+                            if (field === 'confidence') {
+                                return (
+                                    <section
+                                        key={field}
+                                        aria-labelledby={labelId}
+                                        className="break-inside-avoid space-y-2"
+                                    >
+                                        <SectionLabel id={labelId}>{caption}</SectionLabel>
+                                        <ConfidenceSegmentedControl
+                                            value={source.confidence}
+                                            labelledBy={labelId}
+                                            readOnly
+                                        />
+                                    </section>
+                                );
+                            }
+
+                            const text = funnelFieldText(source, field);
+                            return (
+                                <section
+                                    key={field}
+                                    aria-labelledby={labelId}
+                                    className="break-inside-avoid space-y-2"
+                                >
+                                    <SectionLabel id={labelId}>{caption}</SectionLabel>
+                                    <p className={narrativeBodyClass}>{text}</p>
+                                </section>
+                            );
+                        })}
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
 export function LearningRecordDocumentNarrative({
     source,
+    documentVariant = 'default',
     isRecord,
     labels,
     headlineFilled,
@@ -64,6 +149,10 @@ export function LearningRecordDocumentNarrative({
     SkeletonHeadline,
     SkeletonLines
 }: LearningRecordDocumentNarrativeProps) {
+    if (documentVariant === 'funnel') {
+        return <FunnelPreviewNarrative source={source} />;
+    }
+
     const showHeadline = !filledSectionsOnly || isHeadlineSectionFilled(source);
     const showPride = !filledSectionsOnly || isPrideSectionFilled(source);
     const showStandout = !filledSectionsOnly || isStandoutSectionFilled(source);

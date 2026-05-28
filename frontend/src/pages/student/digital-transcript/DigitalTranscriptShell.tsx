@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 /** Page canvas — shadcn `muted` surface */
@@ -50,19 +51,22 @@ export function DigitalTranscriptBackLink({
     children: ReactNode;
 }) {
     return (
-        <Link
-            to={to}
-            data-slot="digital-transcript-back"
-            className="group inline-flex items-center gap-1.5 text-sm font-medium text-primary transition-colors hover:text-primary/80"
+        <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="group gap-1.5 text-primary hover:bg-muted hover:text-primary"
         >
-            <span
-                className="inline-block transition-transform group-hover:-translate-x-0.5"
-                aria-hidden
-            >
-                ←
-            </span>
-            {children}
-        </Link>
+            <Link to={to} data-slot="digital-transcript-back">
+                <span
+                    className="inline-block transition-transform group-hover:-translate-x-0.5"
+                    aria-hidden
+                >
+                    ←
+                </span>
+                {children}
+            </Link>
+        </Button>
     );
 }
 
