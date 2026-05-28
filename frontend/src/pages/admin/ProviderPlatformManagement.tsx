@@ -16,6 +16,7 @@ import API from '@/api/api';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { FormModal } from '@/components/shared/FormModal';
+import { EnrollmentTypeSelector } from '@/Components/shared/EnrollmentTypeSelector';
 import { DataTable, Column } from '@/components/shared/DataTable';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -196,13 +197,19 @@ function AddProviderModal({
     );
     const [baseUrl, setBaseUrl] = useState('');
     const [accessKey, setAccessKey] = useState('');
+    const [enrollmentTypes, setEnrollmentTypes] = useState<string[]>([]);
     const [submitting, setSubmitting] = useState(false);
+
+    const isCanvas =
+        type === ProviderPlatformType.CANVAS_CLOUD ||
+        type === ProviderPlatformType.CANVAS_OSS;
 
     const resetForm = () => {
         setName('');
         setType(ProviderPlatformType.CANVAS_CLOUD);
         setBaseUrl('');
         setAccessKey('');
+        setEnrollmentTypes([]);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -216,7 +223,8 @@ function AddProviderModal({
                 base_url: baseUrl,
                 account_id: '1',
                 access_key: accessKey,
-                state: 'enabled'
+                state: 'enabled',
+                enrollment_types: isCanvas ? enrollmentTypes : []
             }
         );
         setSubmitting(false);
@@ -250,6 +258,9 @@ function AddProviderModal({
                     <label className="text-sm font-medium text-foreground">
                         Name
                     </label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                        This is the connection name and will be used as the program name
+                    </p>
                     <input
                         type="text"
                         value={name}
@@ -278,7 +289,7 @@ function AddProviderModal({
                 </div>
                 <div>
                     <label className="text-sm font-medium text-foreground">
-                        Base URL
+                        Canvas Instance URL
                     </label>
                     <input
                         type="url"
@@ -291,7 +302,7 @@ function AddProviderModal({
                 </div>
                 <div>
                     <label className="text-sm font-medium text-foreground">
-                        Access Key
+                        Access Token
                     </label>
                     <input
                         type="password"
@@ -300,8 +311,7 @@ function AddProviderModal({
                         required
                         className="mt-1 w-full rounded-md border border-border px-3 py-2 text-sm"
                     />
-                    {(type === ProviderPlatformType.CANVAS_CLOUD ||
-                        type === ProviderPlatformType.CANVAS_OSS) && (
+                    {isCanvas && (
                         <div className="mt-2 rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground">
                             <p className="font-medium text-foreground">
                                 How to create a Canvas personal access token:
@@ -321,7 +331,7 @@ function AddProviderModal({
                                         </a>
                                     ) : (
                                         <span className="italic">
-                                            (enter Base URL above)
+                                            (enter Canvas Instance URL above)
                                             /profile/settings
                                         </span>
                                     )}{' '}
@@ -343,6 +353,12 @@ function AddProviderModal({
                         </div>
                     )}
                 </div>
+                {isCanvas && (
+                    <EnrollmentTypeSelector
+                        selected={enrollmentTypes}
+                        onChange={setEnrollmentTypes}
+                    />
+                )}
                 <div className="flex justify-end gap-2 pt-2">
                     <Button
                         type="button"

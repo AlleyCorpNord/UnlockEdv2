@@ -21,7 +21,7 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { ArrowPathIcon, ChevronLeftIcon } from '@heroicons/react/24/outline';
+import { ArrowPathIcon, ChevronLeftIcon, LinkSlashIcon } from '@heroicons/react/24/outline';
 
 export default function ProviderUserManagement() {
     const { id: providerId } = useParams();
@@ -41,6 +41,7 @@ export default function ProviderUserManagement() {
     const [removedConfirmed, setRemovedConfirmed] = useState<Set<string>>(new Set());
     const [ambiguousSelections, setAmbiguousSelections] = useState<Record<string, number>>({});
     const [unmatchedToCreate, setUnmatchedToCreate] = useState<Set<string>>(new Set());
+    const [userToUnlink, setUserToUnlink] = useState<User | null>(null);
 
     const {
         data: matchData,
@@ -61,6 +62,11 @@ export default function ProviderUserManagement() {
             : null
     );
     const unmappedUsers = unmappedResp?.data ?? [];
+
+    const { data: mappedResp, mutate: mutateMapped } = useSWR<
+        ServerResponseMany<User>
+    >(providerId ? `/api/provider-platforms/${providerId}/mapped-users?per_page=50` : null);
+    const mappedUsers = mappedResp?.data ?? [];
 
     const filteredUnmapped = mapSearch
         ? unmappedUsers.filter(
@@ -170,6 +176,21 @@ export default function ProviderUserManagement() {
             void mutateUnmapped();
         } else {
             toast.error('Failed to map user.');
+        }
+    };
+
+    const handleUnlinkUser = async () => {
+        if (!userToUnlink || !providerId) return;
+        const res = await API.delete(
+            `users/${userToUnlink.id}/logins/${providerId}`
+        );
+        if (res.success) {
+            toast.success(`${userToUnlink.name_first} ${userToUnlink.name_last} unlinked.`);
+            setUserToUnlink(null);
+            void mutateMapped();
+            void mutateMatch();
+        } else {
+            toast.error('Failed to unlink user.');
         }
     };
 
@@ -407,8 +428,31 @@ export default function ProviderUserManagement() {
 
                         {/* Section B: Needs review */}
                         <div className="rounded-lg border border-yellow-200 bg-yellow-50">
-                            <div className="px-4 py-3 text-sm font-medium text-yellow-800">
-                                ~ Needs review ({matchState.ambiguous.length})
+                            <div className="flex items-center justify-between px-4 py-3">
+                                <span className="text-sm font-medium text-yellow-800">
+                                    ~ Needs review ({matchState.ambiguous.length})
+                                </span>
+                                {matchState.ambiguous.length > 0 && (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                            setAmbiguousSelections(
+                                                Object.fromEntries(
+                                                    matchState.ambiguous
+                                                        .filter((r) => r.suggested_user)
+                                                        .map((r) => [
+                                                            r.canvas_user.external_user_id,
+                                                            r.suggested_user!.id,
+                                                        ])
+                                                )
+                                            )
+                                        }
+                                        className="text-yellow-800 border-yellow-400 bg-yellow-100 hover:bg-yellow-200"
+                                    >
+                                        Confirm All
+                                    </Button>
+                                )}
                             </div>
                             <div className="border-t border-yellow-200">
                                 {matchState.ambiguous.length === 0 ? (
@@ -636,7 +680,7 @@ export default function ProviderUserManagement() {
                                                                 >
                                                                     {queued
                                                                         ? '✓ Will create'
-                                                                        : 'Create user'}
+                                                                        : 'Create resident'}
                                                                 </Button>
                                                                 <Button
                                                                     size="sm"
@@ -657,7 +701,7 @@ export default function ProviderUserManagement() {
                                                                     }}
                                                                     className="text-foreground border-border"
                                                                 >
-                                                                    Select user
+                                                                    Select resident
                                                                 </Button>
                                                             </div>
                                                         </td>
@@ -671,6 +715,54 @@ export default function ProviderUserManagement() {
                         </div>
                     </div>
                 ) : null}
+
+                {/* Linked Users Section */}
+                <div className="rounded-lg border border-border bg-card">
+                    <div className="px-4 py-3 text-sm font-medium text-foreground border-b border-border">
+                        Linked Residents ({mappedUsers.length})
+                    </div>
+                    {mappedUsers.length === 0 ? (
+                        <p className="p-4 text-sm text-muted-foreground">
+                            No residents are currently linked to this platform.
+                        </p>
+                    ) : (
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                                    <th className="px-4 py-2">Name</th>
+                                    <th className="px-4 py-2">Username</th>
+                                    <th className="px-4 py-2 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {mappedUsers.map((u) => (
+                                    <tr
+                                        key={u.id}
+                                        className="border-b border-border last:border-b-0"
+                                    >
+                                        <td className="px-4 py-2 font-medium text-foreground">
+                                            {u.name_first} {u.name_last}
+                                        </td>
+                                        <td className="px-4 py-2 text-muted-foreground">
+                                            {u.username}
+                                        </td>
+                                        <td className="px-4 py-2 text-right">
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => setUserToUnlink(u)}
+                                                className="text-destructive hover:text-destructive"
+                                            >
+                                                <LinkSlashIcon className="size-4 mr-1" />
+                                                Unlink
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
 
                 <FormModal
                     open={showMapModal}
@@ -788,6 +880,16 @@ export default function ProviderUserManagement() {
                     description="This will import all users from the provider platform. Are you sure you want to continue?"
                     confirmLabel="Import All"
                     onConfirm={() => void handleImportAll()}
+                />
+
+                <ConfirmDialog
+                    open={userToUnlink !== null}
+                    onOpenChange={(open) => { if (!open) setUserToUnlink(null); }}
+                    title="Unlink Resident"
+                    description={`Are you sure you want to unlink ${userToUnlink ? `${userToUnlink.name_first} ${userToUnlink.name_last}` : 'this resident'} from ${provider?.name ?? 'this platform'}?`}
+                    confirmLabel="Unlink"
+                    onConfirm={() => void handleUnlinkUser()}
+                    variant="destructive"
                 />
             </div>
         </div>
