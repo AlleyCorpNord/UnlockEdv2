@@ -113,6 +113,21 @@ export function migrateDigitalTranscriptLegacyStorage() {
 
 export type TranscriptUiPhase = 'survey' | 'preview';
 
+/** Funnel Q4 — standout moment or person toggle. */
+export type TranscriptQ4Toggle = 'yes' | 'notReally';
+
+/** Shared funnel reflection fields (Q4–Q9). */
+export interface TranscriptFunnelReflectionFields {
+    q4Toggle: TranscriptQ4Toggle | null;
+    q4Text: string;
+    q5BeforeTags: string[];
+    q5AfterTags: string[];
+    q5FreeText: string;
+    q7Text: string;
+    q8Selections: string[];
+    q9Selections: string[];
+}
+
 /** In-progress survey + preview gate; persisted for autosave / resume */
 export interface TranscriptDraft {
     id: string;
@@ -131,6 +146,14 @@ export interface TranscriptDraft {
     pride: string;
     standoutMoment: string;
     adviceToPeer: string;
+    q4Toggle: TranscriptQ4Toggle | null;
+    q4Text: string;
+    q5BeforeTags: string[];
+    q5AfterTags: string[];
+    q5FreeText: string;
+    q7Text: string;
+    q8Selections: string[];
+    q9Selections: string[];
     /** When set, tapping Done updates this saved entry instead of creating a new one. */
     editingEntryId?: string;
 }
@@ -151,4 +174,12 @@ export interface TranscriptEntry {
     pride: string;
     standoutMoment: string;
     adviceToPeer: string;
+    q4Toggle: TranscriptQ4Toggle | null;
+    q4Text: string;
+    q5BeforeTags: string[];
+    q5AfterTags: string[];
+    q5FreeText: string;
+    q7Text: string;
+    q8Selections: string[];
+    q9Selections: string[];
 }

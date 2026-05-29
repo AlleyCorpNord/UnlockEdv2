@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TOP_SKILLS_MAX } from '@/pages/student/digital-transcript/transcriptReflectionConfig';
 import {
+    createEmptyTranscriptEntry,
     deleteTranscriptEntryById,
     dispatchEntrySessionUpdated,
     entrySessionIsDirty,
@@ -64,6 +65,23 @@ function normalizeTranscriptDraft(parsed: Record<string, unknown>): TranscriptDr
         pride: strField(d.pride),
         standoutMoment: strField(d.standoutMoment),
         adviceToPeer: strField(d.adviceToPeer),
+        q4Toggle:
+            d.q4Toggle === 'yes' || d.q4Toggle === 'notReally' ? d.q4Toggle : null,
+        q4Text: strField(d.q4Text),
+        q5BeforeTags: Array.isArray(d.q5BeforeTags)
+            ? d.q5BeforeTags.filter((x): x is string => typeof x === 'string').slice(0, 2)
+            : [],
+        q5AfterTags: Array.isArray(d.q5AfterTags)
+            ? d.q5AfterTags.filter((x): x is string => typeof x === 'string').slice(0, 2)
+            : [],
+        q5FreeText: strField(d.q5FreeText),
+        q7Text: strField(d.q7Text),
+        q8Selections: Array.isArray(d.q8Selections)
+            ? d.q8Selections.filter((x): x is string => typeof x === 'string')
+            : [],
+        q9Selections: Array.isArray(d.q9Selections)
+            ? d.q9Selections.filter((x): x is string => typeof x === 'string')
+            : [],
         editingEntryId:
             typeof d.editingEntryId === 'string' && d.editingEntryId.trim()
                 ? d.editingEntryId.trim()
@@ -72,22 +90,31 @@ function normalizeTranscriptDraft(parsed: Record<string, unknown>): TranscriptDr
 }
 
 export function createEmptyDraft(): TranscriptDraft {
+    const empty = createEmptyTranscriptEntry();
     const now = new Date().toISOString();
     return {
         id: newId(),
         updatedAt: now,
         stepIndex: 0,
         uiPhase: 'survey',
-        programName: '',
-        completionDate: '',
-        confidence: '',
-        oneSentence: '',
-        topSkills: [],
-        whatMadeYouFinish: '',
-        goalConnection: '',
-        pride: '',
-        standoutMoment: '',
-        adviceToPeer: '',
+        programName: empty.programName,
+        completionDate: empty.completionDate,
+        confidence: empty.confidence,
+        oneSentence: empty.oneSentence,
+        topSkills: empty.topSkills,
+        whatMadeYouFinish: empty.whatMadeYouFinish,
+        goalConnection: empty.goalConnection,
+        pride: empty.pride,
+        standoutMoment: empty.standoutMoment,
+        adviceToPeer: empty.adviceToPeer,
+        q4Toggle: empty.q4Toggle,
+        q4Text: empty.q4Text,
+        q5BeforeTags: empty.q5BeforeTags,
+        q5AfterTags: empty.q5AfterTags,
+        q5FreeText: empty.q5FreeText,
+        q7Text: empty.q7Text,
+        q8Selections: empty.q8Selections,
+        q9Selections: empty.q9Selections,
         editingEntryId: undefined
     };
 }
@@ -235,7 +262,15 @@ export function useTranscriptDraft() {
             goalConnection: source.goalConnection,
             pride: source.pride,
             standoutMoment: source.standoutMoment,
-            adviceToPeer: source.adviceToPeer
+            adviceToPeer: source.adviceToPeer,
+            q4Toggle: source.q4Toggle,
+            q4Text: source.q4Text,
+            q5BeforeTags: source.q5BeforeTags.slice(0, 2),
+            q5AfterTags: source.q5AfterTags.slice(0, 2),
+            q5FreeText: source.q5FreeText,
+            q7Text: source.q7Text,
+            q8Selections: [...source.q8Selections],
+            q9Selections: [...source.q9Selections]
         };
 
         let list: TranscriptEntry[];

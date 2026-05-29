@@ -250,6 +250,71 @@ function addCanvasToPdf(pdf: jsPDF, canvas: HTMLCanvasElement, imgData: string) 
     }
 }
 
+function addCanvasAsSinglePdfPage(
+    pdf: jsPDF,
+    canvas: HTMLCanvasElement,
+    imgData: string,
+    isFirstPage: boolean
+) {
+    if (!isFirstPage) {
+        pdf.addPage();
+    }
+
+    const naturalWidth = CONTENT_WIDTH_IN;
+    const naturalHeight = (canvas.height * naturalWidth) / canvas.width;
+    let drawWidth = naturalWidth;
+    let drawHeight = naturalHeight;
+
+    if (drawHeight > CONTENT_HEIGHT_IN) {
+        drawHeight = CONTENT_HEIGHT_IN;
+        drawWidth = (canvas.width * drawHeight) / canvas.height;
+    }
+
+    const offsetX = MARGIN_IN + (CONTENT_WIDTH_IN - drawWidth) / 2;
+    pdf.addImage(imgData, 'JPEG', offsetX, MARGIN_IN, drawWidth, drawHeight);
+}
+
+export interface LearningRecordCanvasCapture {
+    canvas: HTMLCanvasElement;
+    imgData: string;
+}
+
+export async function captureLearningRecordCanvas(
+    root: HTMLElement
+): Promise<LearningRecordCanvasCapture> {
+    await document.fonts.ready;
+
+    const elements = collectElementsForCapture(root);
+    const previousStyles = applyCaptureStyles(elements);
+    const scale = pickCanvasScale(root);
+
+    try {
+        const canvas = await html2canvas(root, {
+            scale,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            scrollX: 0,
+            scrollY: -window.scrollY,
+            windowWidth: root.scrollWidth,
+            onclone: (clonedDoc, clonedRoot) => {
+                prepareCloneForCapture(root, clonedRoot, clonedDoc);
+            }
+        });
+
+        if (canvas.width === 0 || canvas.height === 0) {
+            throw new Error('PDF capture produced an empty canvas');
+        }
+
+        return {
+            canvas,
+            imgData: canvas.toDataURL('image/jpeg', 0.92)
+        };
+    } finally {
+        restoreCaptureStyles(previousStyles);
+    }
+}
+
 export function slugifyLearningRecordFilenamePart(value: string): string {
     return value
         .trim()
@@ -269,50 +334,39 @@ export async function downloadLearningRecordPdf(
     root: HTMLElement,
     filename: string
 ): Promise<void> {
-    await document.fonts.ready;
+    const { canvas, imgData } = await captureLearningRecordCanvas(root);
+    const pdf = new jsPDF({
+        unit: 'in',
+        format: 'letter',
+        orientation: 'portrait',
+        compress: true
+    });
 
-    const elements = collectElementsForCapture(root);
-    const previousStyles = applyCaptureStyles(elements);
-    const scale = pickCanvasScale(root);
+    addCanvasToPdf(pdf, canvas, imgData);
+    pdf.save(filename);
+}
 
-    try {
-        // #region agent log
-        fetch('http://127.0.0.1:7605/ingest/222c6233-433f-42b0-8e1b-e79b53b2d8b4',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'55a621'},body:JSON.stringify({sessionId:'55a621',location:'downloadLearningRecordPdf.ts:downloadStart',message:'PDF capture starting',data:{rootTag:root.tagName,childCount:root.querySelectorAll('*').length},timestamp:Date.now(),hypothesisId:'H-E'})}).catch(()=>{});
-        // #endregion
-        const canvas = await html2canvas(root, {
-            scale,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            logging: false,
-            scrollX: 0,
-            scrollY: -window.scrollY,
-            windowWidth: root.scrollWidth,
-            onclone: (clonedDoc, clonedRoot) => {
-                const stats = prepareCloneForCapture(root, clonedRoot, clonedDoc);
-                // #region agent log
-                fetch('http://127.0.0.1:7605/ingest/222c6233-433f-42b0-8e1b-e79b53b2d8b4',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'55a621'},body:JSON.stringify({sessionId:'55a621',location:'downloadLearningRecordPdf.ts:onclone',message:'Clone color prep stats',data:stats,timestamp:Date.now(),hypothesisId:'H-A,H-B,H-C'})}).catch(()=>{});
-                // #endregion
-            }
-        });
-        // #region agent log
-        fetch('http://127.0.0.1:7605/ingest/222c6233-433f-42b0-8e1b-e79b53b2d8b4',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'55a621'},body:JSON.stringify({sessionId:'55a621',location:'downloadLearningRecordPdf.ts:downloadSuccess',message:'html2canvas completed',data:{w:canvas.width,h:canvas.height},timestamp:Date.now(),hypothesisId:'H-C'})}).catch(()=>{});
-        // #endregion
-
-        if (canvas.width === 0 || canvas.height === 0) {
-            throw new Error('PDF capture produced an empty canvas');
-        }
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.92);
-        const pdf = new jsPDF({
-            unit: 'in',
-            format: 'letter',
-            orientation: 'portrait',
-            compress: true
-        });
-
-        addCanvasToPdf(pdf, canvas, imgData);
-        pdf.save(filename);
-    } finally {
-        restoreCaptureStyles(previousStyles);
+export async function downloadAllLearningRecordAchievementsPdf(
+    captureEntryRoot: () => Promise<HTMLElement>,
+    entryCount: number,
+    filename: string
+): Promise<void> {
+    if (entryCount === 0) {
+        return;
     }
+
+    const pdf = new jsPDF({
+        unit: 'in',
+        format: 'letter',
+        orientation: 'portrait',
+        compress: true
+    });
+
+    for (let i = 0; i < entryCount; i++) {
+        const root = await captureEntryRoot();
+        const { canvas, imgData } = await captureLearningRecordCanvas(root);
+        addCanvasAsSinglePdfPage(pdf, canvas, imgData, i === 0);
+    }
+
+    pdf.save(filename);
 }
