@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
 import useSWR from 'swr';
 import { Calendar } from 'lucide-react';
 import { Pagination } from '@/components/Pagination';
@@ -96,8 +96,7 @@ function formatEntry(entry: HistoryEntry): React.ReactNode {
 }
 
 export function AuditTab({ classId }: AuditTabProps) {
-    const [page, setPage] = useState(1);
-    const [perPage, setPerPage] = useState(20);
+    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 20, 'audit');
 
     const { data: auditResp } = useSWR<ServerResponseMany<HistoryEntry>>(
         `/api/program-classes/${classId}/history?page=${page}&per_page=${perPage}`
@@ -141,16 +140,13 @@ export function AuditTab({ classId }: AuditTabProps) {
                     ))}
                 </div>
             )}
-            {total >= perPage && (
+            {total > 0 && (
                 <Pagination
                     currentPage={page}
                     totalItems={total}
                     itemsPerPage={perPage}
                     onPageChange={setPage}
-                    onItemsPerPageChange={(val) => {
-                        setPerPage(val);
-                        setPage(1);
-                    }}
+                    onItemsPerPageChange={setPerPage}
                     itemLabel="entries"
                 />
             )}

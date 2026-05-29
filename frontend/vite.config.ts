@@ -14,7 +14,10 @@ export default defineConfig({
     server: {
         host: '0.0.0.0',
         port: 5173,
-        allowedHosts: ['frontend']
+        allowedHosts: ['frontend'],
+        watch: {
+            usePolling: true
+        }
     },
     build: {
         sourcemap: true,

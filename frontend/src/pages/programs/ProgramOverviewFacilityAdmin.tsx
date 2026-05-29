@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import useSWR from 'swr';
 import { toast } from 'sonner';
@@ -32,10 +33,7 @@ import {
     ServerResponseOne
 } from '@/types';
 import { getInstructorName, getStatusColor } from '@/lib/formatters';
-import {
-    programTypeColors,
-    TAB_TRIGGER_CLASSES
-} from '@/pages/program-detail/constants';
+import { programTypeColors } from '@/pages/program-detail/constants';
 import { cn } from '@/lib/utils';
 import { formatHistoryEntry } from '@/components/history/formatHistoryEntry';
 import { ClassManagementFormInner } from '@/pages/programs/ClassManagementForm';
@@ -109,8 +107,12 @@ export default function ProgramOverviewFacilityAdmin() {
     const [searchParams] = useSearchParams();
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('classes');
-    const [historyPage, setHistoryPage] = useState(1);
-    const [historyPerPage, setHistoryPerPage] = useState(20);
+    const {
+        page: historyPage,
+        perPage: historyPerPage,
+        setPage: setHistoryPage,
+        setPerPage: setHistoryPerPage
+    } = useUrlPagination(1, 20, 'history');
     const [statusModalOpen, setStatusModalOpen] = useState(false);
     const [selectedClass, setSelectedClass] = useState<Class | null>(null);
     const [selectedStatus, setSelectedStatus] = useState('');
@@ -118,10 +120,13 @@ export default function ProgramOverviewFacilityAdmin() {
     const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
     const [showEditDialog, setShowEditDialog] = useState(false);
     const [showArchiveDialog, setShowArchiveDialog] = useState(false);
-    const [showCannotArchiveDialog, setShowCannotArchiveDialog] = useState(false);
+    const [showCannotArchiveDialog, setShowCannotArchiveDialog] =
+        useState(false);
     const [showReactivateDialog, setShowReactivateDialog] = useState(false);
     const [archiveCheckLoading, setArchiveCheckLoading] = useState(false);
-    const [archiveBlockingFacilities, setArchiveBlockingFacilities] = useState<string[]>([]);
+    const [archiveBlockingFacilities, setArchiveBlockingFacilities] = useState<
+        string[]
+    >([]);
 
     const facilityIdParam = searchParams.get('facility_id');
     const facilityId = facilityIdParam ? Number(facilityIdParam) : null;
@@ -132,7 +137,9 @@ export default function ProgramOverviewFacilityAdmin() {
 
     const { data: programResp, mutate: mutateProgram } = useSWR<
         ServerResponseOne<ProgramOverview>
-    >(`/api/programs/${program_id}${facilityId ? `?facility_id=${facilityId}` : ''}`);
+    >(
+        `/api/programs/${program_id}${facilityId ? `?facility_id=${facilityId}` : ''}`
+    );
     const program = programResp?.data;
 
     const { data: deleteCheckResp, mutate: mutateDeleteCheck } = useSWR<
@@ -220,7 +227,8 @@ export default function ProgramOverviewFacilityAdmin() {
             return;
         }
 
-        const blocking = (resp.data as { facilities: string[] }).facilities ?? [];
+        const blocking =
+            (resp.data as { facilities: string[] }).facilities ?? [];
         if (blocking.length > 0) {
             setArchiveBlockingFacilities(blocking);
             setShowCannotArchiveDialog(true);
@@ -312,8 +320,9 @@ export default function ProgramOverviewFacilityAdmin() {
         facilityFromProgram?.name ??
         facilityResp?.data?.name ??
         user?.facility?.name;
-    const showFacilityContextBanner =
-        Boolean(user && canSwitchFacility(user) && facilityId && facilityName);
+    const showFacilityContextBanner = Boolean(
+        user && canSwitchFacility(user) && facilityId && facilityName
+    );
 
     if (!program) {
         return (
@@ -322,6 +331,8 @@ export default function ProgramOverviewFacilityAdmin() {
             </div>
         );
     }
+
+    const isCanvasProgram = (program?.id ?? 0) >= 100_000_000;
 
     const programStatus = program.archived_at
         ? 'Archived'
@@ -436,6 +447,17 @@ export default function ProgramOverviewFacilityAdmin() {
                     </div>
                 </div>
             )}
+            {isCanvasProgram && (
+                <div className="bg-blue-50 border-b border-blue-200">
+                    <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-2 text-sm text-blue-700">
+                        <BookOpen className="size-4 shrink-0" />
+                        <span>
+                            This program is managed externally in Canvas. Data
+                            is read-only.
+                        </span>
+                    </div>
+                </div>
+            )}
             <div className="bg-white border-b border-gray-200">
                 <div
                     className={`max-w-7xl mx-auto px-6 ${
@@ -479,55 +501,92 @@ export default function ProgramOverviewFacilityAdmin() {
                                         <p className="text-xs text-gray-600 font-medium">
                                             Program Status
                                         </p>
-                                        <Select
-                                            value={programStatus}
-                                            onValueChange={(value) =>
-                                                void handleStatusSelectChange(
-                                                    value
-                                                )
-                                            }
-                                            disabled={archiveCheckLoading}
-                                        >
-                                            <SelectTrigger className="w-[140px] h-9 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {programStatus === 'Archived' ? (
-                                                    <>
-                                                        <SelectItem
-                                                            value="Archived"
-                                                            disabled
-                                                        >
-                                                            Archived
-                                                        </SelectItem>
-                                                        <SelectItem value="Reactivate">
-                                                            Reactivate
-                                                        </SelectItem>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <SelectItem value="Available">
-                                                            Available
-                                                        </SelectItem>
-                                                        <SelectItem value="Inactive">
-                                                            Inactive
-                                                        </SelectItem>
-                                                        <SelectItem value="Archived">
-                                                            Archived
-                                                        </SelectItem>
-                                                    </>
-                                                )}
-                                            </SelectContent>
-                                        </Select>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <span>
+                                                    <Select
+                                                        value={programStatus}
+                                                        onValueChange={
+                                                            isCanvasProgram
+                                                                ? undefined
+                                                                : (value) =>
+                                                                      void handleStatusSelectChange(
+                                                                          value
+                                                                      )
+                                                        }
+                                                        disabled={
+                                                            archiveCheckLoading ||
+                                                            isCanvasProgram
+                                                        }
+                                                    >
+                                                        <SelectTrigger className="w-[140px] h-9 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0">
+                                                            <SelectValue />
+                                                        </SelectTrigger>
+                                                        <SelectContent>
+                                                            {programStatus ===
+                                                            'Archived' ? (
+                                                                <>
+                                                                    <SelectItem
+                                                                        value="Archived"
+                                                                        disabled
+                                                                    >
+                                                                        Archived
+                                                                    </SelectItem>
+                                                                    <SelectItem value="Reactivate">
+                                                                        Reactivate
+                                                                    </SelectItem>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <SelectItem value="Available">
+                                                                        Available
+                                                                    </SelectItem>
+                                                                    <SelectItem value="Inactive">
+                                                                        Inactive
+                                                                    </SelectItem>
+                                                                    <SelectItem value="Archived">
+                                                                        Archived
+                                                                    </SelectItem>
+                                                                </>
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </span>
+                                            </TooltipTrigger>
+                                            {isCanvasProgram && (
+                                                <TooltipContent>
+                                                    Managed in Canvas
+                                                </TooltipContent>
+                                            )}
+                                        </Tooltip>
                                     </div>
-                                    <Button
-                                        variant="outline"
-                                        className="border-gray-300 mt-5 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
-                                        onClick={() => setShowEditDialog(true)}
-                                    >
-                                        <Edit className="size-4 mr-2" />
-                                        Edit Program
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <span>
+                                                <Button
+                                                    variant="outline"
+                                                    className="border-gray-300 mt-5 focus-visible:border-[#b3b3b3] focus-visible:ring-[3px] focus-visible:ring-[#b3b3b3]/50 focus-visible:ring-offset-0"
+                                                    onClick={
+                                                        isCanvasProgram
+                                                            ? undefined
+                                                            : () =>
+                                                                  setShowEditDialog(
+                                                                      true
+                                                                  )
+                                                    }
+                                                    disabled={isCanvasProgram}
+                                                >
+                                                    <Edit className="size-4 mr-2" />
+                                                    Edit Program
+                                                </Button>
+                                            </span>
+                                        </TooltipTrigger>
+                                        {isCanvasProgram && (
+                                            <TooltipContent>
+                                                Managed in Canvas
+                                            </TooltipContent>
+                                        )}
+                                    </Tooltip>
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button
@@ -548,19 +607,28 @@ export default function ProgramOverviewFacilityAdmin() {
                                                         <DropdownMenuItem
                                                             variant="destructive"
                                                             onClick={() => {
-                                                                setDeleteConfirmationText('');
-                                                                setDeleteModalOpen(true);
+                                                                setDeleteConfirmationText(
+                                                                    ''
+                                                                );
+                                                                setDeleteModalOpen(
+                                                                    true
+                                                                );
                                                             }}
-                                                            disabled={!canDelete}
+                                                            disabled={
+                                                                !canDelete ||
+                                                                isCanvasProgram
+                                                            }
                                                         >
                                                             <Trash2 className="size-4" />
                                                             Delete Program
                                                         </DropdownMenuItem>
                                                     </div>
                                                 </TooltipTrigger>
-                                                {!canDelete && deleteBlockerReason && (
+                                                {(!canDelete || isCanvasProgram) && (
                                                     <TooltipContent side="left">
-                                                        {deleteBlockerReason}
+                                                        {isCanvasProgram
+                                                            ? 'Managed in Canvas'
+                                                            : (deleteBlockerReason ?? 'Cannot delete program')}
                                                     </TooltipContent>
                                                 )}
                                             </Tooltip>
@@ -608,25 +676,25 @@ export default function ProgramOverviewFacilityAdmin() {
                         <TabsList className="bg-white border border-gray-200 p-1 h-auto mb-2 gap-1">
                             <TabsTrigger
                                 value="classes"
-                                className={TAB_TRIGGER_CLASSES}
+                                className="tab-trigger"
                             >
                                 Classes ({nonArchivedClasses.length})
                             </TabsTrigger>
                             <TabsTrigger
                                 value="details"
-                                className={TAB_TRIGGER_CLASSES}
+                                className="tab-trigger"
                             >
                                 Program Details
                             </TabsTrigger>
                             <TabsTrigger
                                 value="performance"
-                                className={TAB_TRIGGER_CLASSES}
+                                className="tab-trigger"
                             >
                                 Performance
                             </TabsTrigger>
                             <TabsTrigger
                                 value="history"
-                                className={TAB_TRIGGER_CLASSES}
+                                className="tab-trigger"
                             >
                                 Audit History
                             </TabsTrigger>
@@ -639,8 +707,11 @@ export default function ProgramOverviewFacilityAdmin() {
                                 programId={program_id!}
                                 facilityId={facilityId ?? undefined}
                                 canAddClass={
-                                    !!program.is_active && !program.archived_at
+                                    !!program.is_active &&
+                                    !program.archived_at &&
+                                    !isCanvasProgram
                                 }
+                                isCanvasProgram={isCanvasProgram}
                                 onOpenStatusModal={handleOpenStatusModal}
                                 onCreated={() => void mutateClasses()}
                             />
@@ -667,10 +738,7 @@ export default function ProgramOverviewFacilityAdmin() {
                                 currentPage={historyPage}
                                 itemsPerPage={historyPerPage}
                                 onPageChange={setHistoryPage}
-                                onItemsPerPageChange={(val) => {
-                                    setHistoryPerPage(val);
-                                    setHistoryPage(1);
-                                }}
+                                onItemsPerPageChange={setHistoryPerPage}
                             />
                         </TabsContent>
                     </Tabs>
@@ -861,6 +929,7 @@ function ClassesTab({
     programId,
     facilityId,
     canAddClass,
+    isCanvasProgram,
     onOpenStatusModal,
     onCreated
 }: {
@@ -869,6 +938,7 @@ function ClassesTab({
     programId: string;
     facilityId?: number;
     canAddClass: boolean;
+    isCanvasProgram?: boolean;
     onOpenStatusModal: (cls: Class) => void;
     onCreated?: () => void;
 }) {
@@ -963,7 +1033,7 @@ function ClassesTab({
                                         )
                                     }
                                     className="hover:bg-[#E2E7EA]/50"
-                                    editableStatus
+                                    editableStatus={!isCanvasProgram}
                                     showEnrollment
                                 />
                             ))}
@@ -1036,7 +1106,7 @@ function ClassesTab({
                                         )
                                     }
                                     className="hover:bg-gray-100 bg-gray-50/50"
-                                    editableStatus
+                                    editableStatus={!isCanvasProgram}
                                 />
                             ))}
                         </div>
@@ -1057,7 +1127,7 @@ function ClassRow({
 }: {
     cls: Class;
     onOpenStatusModal: (cls: Class) => void;
-    onClick: () => void;
+    onClick?: () => void;
     className?: string;
     editableStatus?: boolean;
     showEnrollment?: boolean;
@@ -1101,7 +1171,8 @@ function ClassRow({
     return (
         <div
             className={cn(
-                'p-6 cursor-pointer transition-colors',
+                'p-6 transition-colors',
+                onClick ? 'cursor-pointer' : 'cursor-default',
                 className ?? ''
             )}
             onClick={onClick}
@@ -1411,7 +1482,7 @@ function AuditHistoryTab({
                     </div>
                 )}
             </CardContent>
-            {totalItems > itemsPerPage && (
+            {totalItems > 0 && (
                 <Pagination
                     currentPage={currentPage}
                     totalItems={totalItems}

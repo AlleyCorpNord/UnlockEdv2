@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 interface PaginationProps {
@@ -6,7 +7,8 @@ interface PaginationProps {
   itemsPerPage: number;
   onPageChange: (page: number) => void;
   onItemsPerPageChange: (itemsPerPage: number) => void;
-  itemLabel?: string; // e.g., "programs", "classes", "residents"
+  itemLabel?: string;
+  instanceId?: string;
 }
 
 export function Pagination({
@@ -15,8 +17,11 @@ export function Pagination({
   itemsPerPage,
   onPageChange,
   onItemsPerPageChange,
-  itemLabel = 'items'
+  itemLabel = 'items',
+  instanceId
 }: PaginationProps) {
+  const generatedId = useId();
+  const itemsPerPageId = `${instanceId ?? `pagination-${generatedId}`}-items-per-page`;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
@@ -71,15 +76,14 @@ export function Pagination({
           </p>
 
           <div className="flex items-center gap-2">
-            <label htmlFor="items-per-page" className="text-sm text-gray-600 dark:text-gray-400">
+            <label htmlFor={itemsPerPageId} className="text-sm text-gray-600 dark:text-gray-400">
               Items per page:
             </label>
             <select
-              id="items-per-page"
+              id={itemsPerPageId}
               value={itemsPerPage}
               onChange={(e) => {
                 onItemsPerPageChange(Number(e.target.value));
-                onPageChange(1); // Reset to first page when changing items per page
               }}
               className="bg-white dark:bg-[#262626] text-gray-900 dark:text-white px-3 py-1.5 rounded border border-gray-200 dark:border-[#404040] text-sm focus:outline-none focus:ring-2 focus:ring-[#556830] dark:focus:ring-[#8fb55e]"
             >

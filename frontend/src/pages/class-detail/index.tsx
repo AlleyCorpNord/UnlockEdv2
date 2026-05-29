@@ -1,10 +1,9 @@
 import { useState, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import useSWR, { useSWRConfig } from 'swr';
-import { Edit, MoreVertical, Trash2 } from 'lucide-react';
+import { BookOpen, Edit, MoreVertical, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -31,35 +30,31 @@ import { AuditTab } from './AuditTab';
 import { TakeAttendanceModal } from './TakeAttendanceModal';
 import { DeleteClassModal } from './DeleteClassModal';
 import { EditClassModal } from './EditClassModal';
+import { LoadingSkeleton } from './LoadingSkeleton';
+import { ClassNotFoundCard } from './ClassNotFoundCard';
+
+interface DeleteBlockers {
+    enrollments?: number;
+    completions?: number;
+    attendance_flags?: number;
+    non_deletable_status?: string;
+}
+
+function getDeleteBlockerReason(blockers: DeleteBlockers | undefined): string {
+    if (blockers?.non_deletable_status)
+        return `Only Scheduled classes can be deleted (this class is ${blockers.non_deletable_status})`;
+    if ((blockers?.enrollments ?? 0) > 0)
+        return 'Cannot delete class with enrollment records';
+    if ((blockers?.completions ?? 0) > 0)
+        return 'Cannot delete class with program completions';
+    if ((blockers?.attendance_flags ?? 0) > 0)
+        return 'Cannot delete class with attendance records';
+    return 'Cannot delete class';
+}
 
 const TAB_TRIGGER_CLASS =
     'data-[state=active]:bg-[#556830] data-[state=active]:text-white data-[state=active]:shadow-sm data-[state=inactive]:text-gray-600 data-[state=inactive]:hover:text-[#203622] data-[state=inactive]:hover:bg-gray-50 px-4 py-2.5 rounded-lg transition-all duration-200';
 
-function LoadingSkeleton() {
-    return (
-        <div className="bg-[#E2E7EA]">
-            <div className="bg-white border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-6 py-6">
-                    <Skeleton className="h-8 w-32 mb-4" />
-                    <Skeleton className="h-10 w-80 mb-3" />
-                    <Skeleton className="h-5 w-48 mb-4" />
-                    <div className="grid grid-cols-5 gap-4">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                            <Skeleton key={i} className="h-20 rounded-lg" />
-                        ))}
-                    </div>
-                </div>
-            </div>
-            <div className="max-w-7xl mx-auto px-6 py-6">
-                <div className="grid grid-cols-3 gap-6 mb-6">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                        <Skeleton key={i} className="h-40 rounded-lg" />
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-}
 
 export default function ClassDetailPage() {
     const { class_id } = useParams<{ class_id: string }>();
@@ -104,19 +99,10 @@ export default function ClassDetailPage() {
     const isDeleteCheckReady = deleteCheckResp !== undefined;
     const canDelete = deleteCheckResp?.data?.can_delete ?? false;
     const deleteBlockers = deleteCheckResp?.data?.blockers;
-    const deleteBlockerReason = (() => {
-        if (deleteBlockers?.non_deletable_status)
-            return `Only Scheduled classes can be deleted (this class is ${deleteBlockers.non_deletable_status})`;
-        if ((deleteBlockers?.enrollments ?? 0) > 0)
-            return 'Cannot delete class with enrollment records';
-        if ((deleteBlockers?.completions ?? 0) > 0)
-            return 'Cannot delete class with program completions';
-        if ((deleteBlockers?.attendance_flags ?? 0) > 0)
-            return 'Cannot delete class with attendance records';
-        return 'Cannot delete class';
-    })();
+    const deleteBlockerReason = getDeleteBlockerReason(deleteBlockers);
 
     const cls = classResp?.data;
+    const isCanvasClass = parseInt(class_id ?? '0') >= 100_000_000;
     const attendanceRate = rateResp?.data?.attendance_rate ?? 0;
     const atRiskCount = flagsResp?.meta?.total ?? 0;
     const flaggedUserIds = useMemo(() => {
@@ -141,29 +127,22 @@ export default function ClassDetailPage() {
     if (isLoading) return <LoadingSkeleton />;
 
     if (!cls) {
-        return (
-            <div className="bg-[#E2E7EA] flex items-center justify-center">
-                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center max-w-md">
-                    <h2 className="text-xl font-semibold text-[#203622] mb-2">
-                        Class Not Found
-                    </h2>
-                    <p className="text-gray-500 mb-4">
-                        The class you are looking for does not exist or you do
-                        not have access to it.
-                    </p>
-                    <Button
-                        onClick={() => navigate('/classes')}
-                        className="bg-[#556830] hover:bg-[#203622]"
-                    >
-                        Back to Classes
-                    </Button>
-                </div>
-            </div>
-        );
+        return <ClassNotFoundCard onBack={() => navigate('/classes')} />;
     }
 
     return (
         <div className="bg-[#E2E7EA]">
+            {isCanvasClass && (
+                <div className="bg-blue-50 border-b border-blue-200">
+                    <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-2 text-sm text-blue-700">
+                        <BookOpen className="size-4 shrink-0" />
+                        <span>
+                            This class is managed externally in Canvas. Data is
+                            read-only.
+                        </span>
+                    </div>
+                </div>
+            )}
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-7xl mx-auto px-6 py-6">
                     <Breadcrumbs items={breadcrumbItems} />
@@ -175,6 +154,7 @@ export default function ClassDetailPage() {
                                 onMutate={() => { void mutate(); void mutateDeleteCheck(); }}
                             />
                         </div>
+                        {!isCanvasClass && (
                         <div className="flex gap-2 ml-6">
                             <Button
                                 variant="outline"
@@ -227,6 +207,7 @@ export default function ClassDetailPage() {
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -236,6 +217,7 @@ export default function ClassDetailPage() {
                     cls={cls}
                     attendanceRate={attendanceRate}
                     atRiskCount={atRiskCount}
+                    isCanvasClass={isCanvasClass}
                 />
 
                 <Tabs defaultValue="roster" className="space-y-6">
@@ -279,30 +261,60 @@ export default function ClassDetailPage() {
                     </TabsList>
 
                     <TabsContent value="roster" className="space-y-4">
-                        <RosterTab classId={cls.id} classStatus={cls.status} className={cls.name} capacity={cls.capacity} enrolled={cls.enrolled} flaggedUserIds={flaggedUserIds} onClassMutate={() => { void mutate(); void mutateDeleteCheck(); }} />
+                        <RosterTab classId={cls.id} classStatus={cls.status} className={cls.name} capacity={cls.capacity} enrolled={cls.enrolled} flaggedUserIds={flaggedUserIds} onClassMutate={() => { void mutate(); void mutateDeleteCheck(); }} isCanvasClass={isCanvasClass} />
                     </TabsContent>
 
                     <TabsContent
                         value="enrollment-history"
                         className="space-y-4"
                     >
-                        <EnrollmentHistoryTab classId={cls.id} />
+                        {isCanvasClass ? (
+                            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+                                Enrollment history is managed in Canvas.
+                            </div>
+                        ) : (
+                            <EnrollmentHistoryTab classId={cls.id} />
+                        )}
                     </TabsContent>
 
                     <TabsContent value="sessions" className="space-y-4">
-                        <SessionsTab cls={cls} onClassMutate={() => { void mutate(); void mutateDeleteCheck(); }} />
+                        {isCanvasClass ? (
+                            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+                                Sessions are managed in Canvas.
+                            </div>
+                        ) : (
+                            <SessionsTab cls={cls} onClassMutate={() => { void mutate(); void mutateDeleteCheck(); }} />
+                        )}
                     </TabsContent>
 
                     <TabsContent value="schedule" className="space-y-4">
-                        <ScheduleTab cls={cls} onClassMutate={() => { void mutate(); void mutateDeleteCheck(); }} />
+                        {isCanvasClass ? (
+                            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+                                Schedule is managed in Canvas.
+                            </div>
+                        ) : (
+                            <ScheduleTab cls={cls} onClassMutate={() => { void mutate(); void mutateDeleteCheck(); }} />
+                        )}
                     </TabsContent>
 
                     <TabsContent value="support" className="space-y-4">
-                        <SupportTab classId={cls.id} />
+                        {isCanvasClass ? (
+                            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+                                At-risk tracking is managed in Canvas.
+                            </div>
+                        ) : (
+                            <SupportTab classId={cls.id} />
+                        )}
                     </TabsContent>
 
                     <TabsContent value="audit" className="space-y-4">
-                        <AuditTab classId={cls.id} />
+                        {isCanvasClass ? (
+                            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center text-gray-500">
+                                Audit history is not available for Canvas classes.
+                            </div>
+                        ) : (
+                            <AuditTab classId={cls.id} />
+                        )}
                     </TabsContent>
                 </Tabs>
             </div>

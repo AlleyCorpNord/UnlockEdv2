@@ -38,6 +38,7 @@ interface RosterTabProps {
     enrolled: number;
     flaggedUserIds: Set<number>;
     onClassMutate: () => void;
+    isCanvasClass?: boolean;
 }
 
 function getAllowedStatuses(classStatus: string, currentStatus: EnrollmentStatus): EnrollmentStatus[] {
@@ -48,7 +49,7 @@ function getAllowedStatuses(classStatus: string, currentStatus: EnrollmentStatus
     return allStatuses;
 }
 
-export function RosterTab({ classId, classStatus, className, capacity, enrolled, flaggedUserIds, onClassMutate }: RosterTabProps) {
+export function RosterTab({ classId, classStatus, className, capacity, enrolled, flaggedUserIds, onClassMutate, isCanvasClass = false }: RosterTabProps) {
     const [search, setSearch] = useState('');
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [changingStatus, setChangingStatus] = useState<number | null>(null);
@@ -185,6 +186,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                 </p>
                             </div>
                         </div>
+                        {!isCanvasClass && (
                         <Button
                             variant="outline"
                             className="border-gray-300"
@@ -193,6 +195,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                             <Plus className="size-4 mr-2" />
                             Enroll Resident
                         </Button>
+                        )}
                     </div>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-gray-400" />
@@ -321,6 +324,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                                     </button>
                                                 );
                                             })()}
+                                            {!isCanvasClass && (
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-gray-100 h-8 w-8 p-0">
                                                     <MoreVertical className="size-4" />
@@ -374,6 +378,7 @@ export function RosterTab({ classId, classStatus, className, capacity, enrolled,
                                                     </Tooltip>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

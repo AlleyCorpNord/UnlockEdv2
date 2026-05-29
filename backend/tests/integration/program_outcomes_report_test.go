@@ -387,6 +387,8 @@ func (suite *ProgramOutcomesReportTestSuite) createEvent(classID uint, eventDate
 	if err != nil {
 		suite.T().Fatalf("failed to create test room: %v", err)
 	}
+	}
+	if err != nil {
 	instructorID, err := suite.env.getOrCreateInstructorForClass(classID)
 	if err != nil {
 		suite.T().Fatalf("failed to get instructor: %v", err)

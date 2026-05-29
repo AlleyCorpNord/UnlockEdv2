@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, canSwitchFacility } from '@/auth/useAuth';
@@ -175,8 +176,16 @@ export default function ProgramsPage() {
         }
     };
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const { page, perPage, setPage, setPerPage } = useUrlPagination(1, 10);
+
+    const isFirstRender = useRef(true);
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        setPage(1);
+    }, [search, sort, selectedTypes, selectedStatuses, setPage]);
 
     const toggleTypeFilter = (type: ProgramType) => {
         setSelectedTypes((prev) =>
@@ -286,8 +295,8 @@ export default function ProgramsPage() {
     }, [resp?.data, search, sort, selectedTypes, selectedStatuses]);
 
     const paginatedPrograms = filtered.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
+        (page - 1) * perPage,
+        page * perPage
     );
 
     const stats = useMemo(() => {
@@ -989,17 +998,14 @@ export default function ProgramsPage() {
                         )}
 
                         {/* Pagination */}
-                        {filtered.length > itemsPerPage && (
+                        {filtered.length > 0 && (
                             <div className="mt-6">
                                 <Pagination
-                                    currentPage={currentPage}
+                                    currentPage={page}
                                     totalItems={filtered.length}
-                                    itemsPerPage={itemsPerPage}
-                                    onPageChange={setCurrentPage}
-                                    onItemsPerPageChange={(val) => {
-                                        setItemsPerPage(val);
-                                        setCurrentPage(1);
-                                    }}
+                                    itemsPerPage={perPage}
+                                    onPageChange={setPage}
+                                    onItemsPerPageChange={setPerPage}
                                     itemLabel="items"
                                 />
                             </div>
@@ -1068,6 +1074,14 @@ function ProgramCard({
                         <h3 className="text-[#203622] mb-1 group-hover:text-[#556830] transition-colors">
                             {program.program_name}
                         </h3>
+                        {program.source === 'canvas' && (
+                            <Badge
+                                variant="outline"
+                                className="text-xs bg-blue-50 text-blue-700 border-blue-200 mb-1 inline-flex"
+                            >
+                                Synced from Canvas
+                            </Badge>
+                        )}
                         {program.description && (
                             <p className="text-sm text-gray-600 line-clamp-2">
                                 {program.description}
@@ -1293,6 +1307,14 @@ function ProgramsTable({
                                             <div className="text-base text-[#203622] hover:text-[#556830] transition-colors font-medium mb-1.5">
                                                 {program.program_name}
                                             </div>
+                                            {program.source === 'canvas' && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-xs bg-blue-50 text-blue-700 border-blue-200 mb-1"
+                                                >
+                                                    Synced from Canvas
+                                                </Badge>
+                                            )}
                                         </div>
                                         <div className="flex flex-wrap gap-1.5 items-center">
                                             {types.slice(0, 3).map((type) => (

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useNavigate, Link } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, canSwitchFacility } from '@/auth/useAuth';
@@ -46,7 +47,7 @@ import {
     MapPin,
     Users
 } from 'lucide-react';
-import { Pagination } from '@/components/shared';
+import { Pagination } from '@/components/Pagination';
 import { TakeAttendanceModal } from './class-detail/TakeAttendanceModal';
 import { BulkCancelClassesModal } from '@/components/BulkCancelClassesModal';
 
@@ -93,8 +94,7 @@ export default function ClassesPage() {
     const [programSearch, setProgramSearch] = useState('');
     const [attendanceClass, setAttendanceClass] = useState<Class | null>(null);
     const [showBulkCancel, setShowBulkCancel] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(20);
+    const { page: currentPage, perPage: itemsPerPage, setPage: setCurrentPage, setPerPage: setItemsPerPage } = useUrlPagination();
 
     const crossFacility = user ? canSwitchFacility(user) : false;
 
@@ -216,7 +216,7 @@ export default function ClassesPage() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, todayOnly, attendanceConcerns, facilityFilter, programFilter, statusFilter]);
+    }, [searchQuery, todayOnly, attendanceConcerns, facilityFilter, programFilter, statusFilter, setCurrentPage]);
 
     const paginatedClasses = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
