@@ -238,6 +238,14 @@ export function useTranscriptDraft() {
             pride: entry.pride,
             standoutMoment: entry.standoutMoment,
             adviceToPeer: entry.adviceToPeer,
+            q4Toggle: entry.q4Toggle,
+            q4Text: entry.q4Text,
+            q5BeforeTags: [...entry.q5BeforeTags],
+            q5AfterTags: [...entry.q5AfterTags],
+            q5FreeText: entry.q5FreeText,
+            q7Text: entry.q7Text,
+            q8Selections: [...entry.q8Selections],
+            q9Selections: [...entry.q9Selections],
             editingEntryId: entry.id
         };
         writeDraftToStorage(nextDraft);

@@ -480,9 +480,25 @@ function funnelStepFieldAnswered(entry: TranscriptEntry, field: FunnelStepField)
     return false;
 }
 
+/** Fields read by funnel preview “answered” checks (entry, draft, or document source). */
+export type FunnelPreviewAnswerSource = Pick<
+    TranscriptEntry,
+    | 'whatMadeYouFinish'
+    | 'q4Toggle'
+    | 'q4Text'
+    | 'q5BeforeTags'
+    | 'q5AfterTags'
+    | 'q5FreeText'
+    | 'adviceToPeer'
+    | 'confidence'
+    | 'q8Selections'
+    | 'q9Selections'
+    | 'oneSentence'
+>;
+
 /** Whether a funnel preview field has a visible answer. */
 export function funnelPreviewFieldAnswered(
-    entry: TranscriptEntry,
+    entry: FunnelPreviewAnswerSource,
     key: FunnelPreviewFieldKey
 ): boolean {
     switch (key) {

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { TranscriptDraft, TranscriptEntry } from '@/types/digital-transcript';
 import { LearningRecordDocument } from './LearningRecordDocument';
+import type { LearningRecordDocumentSource } from './learningRecordDocumentModel';
 
 function residentDisplayName(user: ReturnType<typeof useAuth>['user']): string {
     if (!user) return 'Resident';
@@ -11,20 +12,6 @@ function residentDisplayName(user: ReturnType<typeof useAuth>['user']): string {
     const full = [first, last].filter(Boolean).join(' ');
     return full.length > 0 ? full : 'Resident';
 }
-
-type PreviewSource = Pick<
-    TranscriptDraft,
-    | 'programName'
-    | 'completionDate'
-    | 'confidence'
-    | 'oneSentence'
-    | 'topSkills'
-    | 'whatMadeYouFinish'
-    | 'goalConnection'
-    | 'pride'
-    | 'standoutMoment'
-    | 'adviceToPeer'
->;
 
 interface TranscriptResumePreviewProps {
     source: TranscriptEntry | TranscriptDraft;
@@ -48,7 +35,7 @@ export function TranscriptResumePreview({
     const { user } = useAuth();
     const name = residentDisplayName(user);
     const isPaper = variant === 'paper';
-    const doc: PreviewSource = {
+    const doc: LearningRecordDocumentSource = {
         programName: source.programName,
         completionDate: source.completionDate,
         confidence: source.confidence,
@@ -58,7 +45,15 @@ export function TranscriptResumePreview({
         goalConnection: source.goalConnection,
         pride: source.pride,
         standoutMoment: source.standoutMoment,
-        adviceToPeer: source.adviceToPeer
+        adviceToPeer: source.adviceToPeer,
+        q4Toggle: source.q4Toggle ?? null,
+        q4Text: source.q4Text ?? '',
+        q5BeforeTags: source.q5BeforeTags ?? [],
+        q5AfterTags: source.q5AfterTags ?? [],
+        q5FreeText: source.q5FreeText ?? '',
+        q7Text: source.q7Text ?? '',
+        q8Selections: source.q8Selections ?? [],
+        q9Selections: source.q9Selections ?? []
     };
 
     return (

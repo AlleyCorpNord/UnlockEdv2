@@ -1,8 +1,5 @@
 import type { TranscriptEntry } from '@/types/digital-transcript';
-import {
-    countAnsweredReflections,
-    reflectionSlotsTotal
-} from '@/pages/student/digital-transcript/learningRecordDocumentModel';
+import { countAnsweredReflections } from '@/pages/student/digital-transcript/learningRecordDocumentModel';
 import type { LearningRecordFormVariant } from './learningRecordPrototypes';
 import { countFunnelFieldsAnswered } from './transcriptReflectionConfig';
 

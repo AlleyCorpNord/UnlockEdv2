@@ -39,6 +39,7 @@ function SectionLabel({
     return (
         <h3
             id={id}
+            data-section-label
             className={cn(
                 'text-[11px] font-semibold tracking-[0.08em] text-muted-foreground',
                 className
@@ -177,11 +178,12 @@ function FunnelPreviewNarrative({ source }: { source: LearningRecordDocumentSour
 
                 return (
                     <div key={section.id} className="space-y-3">
-                        <div className="flex break-inside-avoid items-center justify-center rounded-[24px] border border-border bg-muted/30 py-0.5">
-                            <span
-                                id={`lr-funnel-section-${section.id}`}
-                                className="text-xs font-semibold uppercase tracking-widest text-black"
-                            >
+                        <div
+                            id={`lr-funnel-section-${section.id}`}
+                            data-section-divider
+                            className="break-inside-avoid w-full border-b border-border pb-1.5 mt-6 text-left"
+                        >
+                            <span className="text-xs font-semibold uppercase tracking-widest text-black">
                                 {section.title}
                             </span>
                         </div>
@@ -267,6 +269,7 @@ export function LearningRecordDocumentNarrative({
                 ) : (
                     <section
                         aria-labelledby="lr-doc-headline"
+                        data-pdf-muted-surface
                         className={cn(
                             'break-inside-avoid space-y-2 rounded-md border-l-4 border-border bg-muted/25 px-3 py-3 dark:bg-muted/15',
                             headlineFilled && 'border-l-primary/60 bg-muted/15 dark:bg-muted/10'

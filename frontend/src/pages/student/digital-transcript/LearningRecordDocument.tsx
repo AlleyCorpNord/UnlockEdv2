@@ -39,11 +39,23 @@ function confidenceSegments(level: string): number {
 }
 
 /** Scan + narrative section labels — 11px sentence case, document rhythm */
-function SectionLabel({ id, children }: { id: string; children: ReactNode }) {
+function SectionLabel({
+    id,
+    children,
+    className
+}: {
+    id: string;
+    children: ReactNode;
+    className?: string;
+}) {
     return (
         <h3
             id={id}
-            className="text-[11px] font-semibold tracking-[0.08em] text-muted-foreground"
+            data-section-label
+            className={cn(
+                'text-[11px] font-semibold tracking-[0.08em] text-muted-foreground',
+                className
+            )}
         >
             {children}
         </h3>
@@ -242,7 +254,7 @@ export function LearningRecordDocument({
                                 <div className="flex items-start justify-between gap-4">
                                     {showProgram ? (
                                         <div className="min-w-0 flex-1 space-y-1">
-                                            <SectionLabel id="lr-funnel-program">
+                                            <SectionLabel id="lr-funnel-program" className="text-[10px]">
                                                 Achievement
                                             </SectionLabel>
                                             <p className="text-sm text-foreground">
@@ -268,7 +280,7 @@ export function LearningRecordDocument({
                                                 !showProgram && 'ml-auto'
                                             )}
                                         >
-                                            <SectionLabel id="lr-funnel-completed">
+                                            <SectionLabel id="lr-funnel-completed" className="text-[10px]">
                                                 {labels.completed}
                                             </SectionLabel>
                                             <p className="text-sm text-foreground">{dateShown}</p>

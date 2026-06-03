@@ -585,7 +585,7 @@ export default function DigitalTranscriptHome() {
                     <div
                         data-slot="learning-record-pdf-capture"
                         aria-hidden
-                        className="pointer-events-none fixed top-0 left-0 w-[8.5in] max-w-[816px] overflow-visible bg-background"
+                        className="pointer-events-none fixed top-0 left-0 w-[8in] max-w-[768px] overflow-visible bg-background"
                         style={{ zIndex: -1, clipPath: 'inset(50%)' }}
                     >
                         <LearningRecordExportContent
@@ -593,6 +593,8 @@ export default function DigitalTranscriptHome() {
                             rows={exportRows}
                             residentName={residentName}
                             filledSectionsOnly
+                            hidePreviewHeader
+                            embeddedLivePreview={isFunnel}
                             documentVariant={isFunnel ? 'funnel' : 'default'}
                         />
                     </div>,

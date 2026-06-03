@@ -37,15 +37,16 @@ export function ReflectionTextField({
     if (!nudge) {
         throw new Error('ReflectionTextField requires fieldKey or nudge');
     }
+    const activeNudge = nudge;
     const len = value.length;
-    const tone = getReflectionNudgeTone(len, nudge);
+    const tone = getReflectionNudgeTone(len, activeNudge);
     const toneCls = NUDGE_TONE_CLASSES[tone];
-    const fill = nudgeTrackFillRatio(len, nudge);
+    const fill = nudgeTrackFillRatio(len, activeNudge);
     const slot = id.replace('wysiwyg-', 'transcript-');
 
     function handleChange(next: string) {
-        if (next.length <= nudge.maxLength) onChange(next);
-        else onChange(next.slice(0, nudge.maxLength));
+        if (next.length <= activeNudge.maxLength) onChange(next);
+        else onChange(next.slice(0, activeNudge.maxLength));
     }
 
     const showDescriptionAbove = descriptionAboveInput && Boolean(nudge.hint);
