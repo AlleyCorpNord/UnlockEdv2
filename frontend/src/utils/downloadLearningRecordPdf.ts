@@ -172,37 +172,6 @@ function resolveSanitizedBackground(el: HTMLElement, computed: CSSStyleDeclarati
     return 'transparent';
 }
 
-function logSectionDividerLayout(
-    el: HTMLElement,
-    view: Window,
-    source: 'live' | 'clone',
-    hypothesisId: string,
-    runId = 'pre-fix'
-): void {
-    const cs = view.getComputedStyle(el);
-    const elRect = el.getBoundingClientRect();
-    const textCenterY = elRect.top + elRect.height / 2;
-    const paddingTop = Number.parseFloat(cs.paddingTop) || 0;
-    const paddingBottom = Number.parseFloat(cs.paddingBottom) || 0;
-    const contentHeight = elRect.height - paddingTop - paddingBottom;
-    const contentCenterY = elRect.top + paddingTop + contentHeight / 2;
-    // #region agent log
-    fetch('http://127.0.0.1:7522/ingest/1f926cf6-0018-4209-a608-d137d75a2924',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'703a1d'},body:JSON.stringify({sessionId:'703a1d',location:'downloadLearningRecordPdf.ts:logSectionDividerLayout',message:'section divider layout',data:{source,hypothesisId,runId,sectionTitle:el.textContent?.trim(),display:cs.display,width:cs.width,lineHeight:cs.lineHeight,paddingTop:cs.paddingTop,paddingBottom:cs.paddingBottom,offsetHeight:el.offsetHeight,clientHeight:el.clientHeight,elRectH:elRect.height,elRectW:elRect.width,centerOffsetPx:textCenterY-contentCenterY,topGapPx:paddingTop,bottomGapPx:paddingBottom},timestamp:Date.now(),hypothesisId:'H9'})}).catch(()=>{});
-    // #endregion
-}
-
-function debugLogSectionDividers(
-    root: HTMLElement,
-    view: Window,
-    source: 'live' | 'clone',
-    hypothesisId: string,
-    runId = 'pre-fix'
-): void {
-    root.querySelectorAll<HTMLElement>('[data-section-divider]').forEach((el, index) => {
-        logSectionDividerLayout(el, view, source, `${hypothesisId}-${index}`, runId);
-    });
-}
-
 /** Bottom-border section divider for html2canvas capture. */
 function applyPdfSectionDividerLayout(el: HTMLElement): void {
     el.style.setProperty('display', 'block', 'important');
@@ -217,75 +186,6 @@ function applyPdfSectionDividerLayout(el: HTMLElement): void {
     el.style.setProperty('border-radius', '0', 'important');
     el.style.setProperty('background-color', 'transparent', 'important');
     el.style.setProperty('text-align', 'left', 'important');
-}
-
-function logDividerCanvasPaint(
-    root: HTMLElement,
-    canvas: HTMLCanvasElement,
-    scale: number,
-    runId: string
-): void {
-    const rootRect = root.getBoundingClientRect();
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    root.querySelectorAll<HTMLElement>('[data-section-divider]').forEach((el, index) => {
-        const rect = el.getBoundingClientRect();
-        const x0 = Math.max(0, Math.round((rect.left - rootRect.left) * scale));
-        const y0 = Math.max(0, Math.round((rect.top - rootRect.top) * scale));
-        const w = Math.max(1, Math.round(rect.width * scale));
-        const h = Math.max(1, Math.round(rect.height * scale));
-
-        const isInk = (r: number, g: number, b: number) => r < 80 && g < 80 && b < 80;
-        const isMutedFill = (r: number, g: number, b: number) =>
-            r > 210 && r < 245 && g > 210 && g < 245 && b > 220 && b < 255;
-
-        const sampleBand = (yStart: number, yEnd: number) => {
-            let ink = 0;
-            let muted = 0;
-            let samples = 0;
-            for (let y = yStart; y < yEnd; y += Math.max(1, Math.floor(h / 8))) {
-                for (
-                    let x = x0 + Math.floor(w * 0.25);
-                    x < x0 + Math.floor(w * 0.75);
-                    x += Math.max(1, Math.floor(w / 6))
-                ) {
-                    if (x >= canvas.width || y >= canvas.height) continue;
-                    const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
-                    samples++;
-                    if (isInk(r, g, b)) ink++;
-                    if (isMutedFill(r, g, b)) muted++;
-                }
-            }
-            return { ink, muted, samples };
-        };
-
-        const third = Math.max(1, Math.floor(h / 3));
-        const top = sampleBand(y0, y0 + third);
-        const mid = sampleBand(y0 + third, y0 + 2 * third);
-        const bot = sampleBand(y0 + 2 * third, y0 + h);
-
-        let inkMassY = 0;
-        let inkCount = 0;
-        for (let y = y0; y < y0 + h; y++) {
-            for (let x = x0 + Math.floor(w * 0.2); x < x0 + Math.floor(w * 0.8); x++) {
-                if (x >= canvas.width || y >= canvas.height) continue;
-                const [r, g, b] = ctx.getImageData(x, y, 1, 1).data;
-                if (isInk(r, g, b)) {
-                    inkMassY += y;
-                    inkCount++;
-                }
-            }
-        }
-
-        const inkCenterY = inkCount > 0 ? inkMassY / inkCount : null;
-        const boxCenterY = y0 + h / 2;
-        const inkCenterOffsetPx = inkCenterY !== null ? (inkCenterY - boxCenterY) / scale : null;
-
-        // #region agent log
-        fetch('http://127.0.0.1:7522/ingest/1f926cf6-0018-4209-a608-d137d75a2924',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'703a1d'},body:JSON.stringify({sessionId:'703a1d',location:'downloadLearningRecordPdf.ts:logDividerCanvasPaint',message:'canvas divider paint',data:{runId,index,sectionTitle:el.textContent?.trim(),domRectH:rect.height,domRectW:rect.width,canvasRectH:h/scale,canvasRectW:w/scale,inkCenterOffsetPx,topInk:top.ink,midInk:mid.ink,botInk:bot.ink,topMuted:top.muted,midMuted:mid.muted,botMuted:bot.muted},timestamp:Date.now(),hypothesisId:'H8'})}).catch(()=>{});
-        // #endregion
-    });
 }
 
 /** html2canvas can ignore small heading font sizes from Tailwind; mirror live computed styles. */
@@ -425,10 +325,10 @@ function prepareCloneForCapture(
     originalRoot: HTMLElement,
     clonedRoot: HTMLElement,
     clonedDoc: Document
-): { oklabAfterPrep: number; cloneNodeCount: number; bruteForcePass: boolean } {
+): void {
     const view = clonedDoc.defaultView;
     if (!view) {
-        return { oklabAfterPrep: -1, cloneNodeCount: 0, bruteForcePass: false };
+        return;
     }
 
     clonedRoot.style.setProperty('clip-path', 'none', 'important');
@@ -447,10 +347,8 @@ function prepareCloneForCapture(
     }
 
     let oklabAfterPrep = countOklabInClone(cloneNodes, view);
-    let bruteForcePass = false;
 
     if (oklabAfterPrep > 0) {
-        bruteForcePass = true;
         for (const el of cloneNodes) {
             el.style.setProperty(
                 'color',
@@ -471,14 +369,6 @@ function prepareCloneForCapture(
 
     restorePdfTargetedStyles(cloneNodes, view);
     syncSectionLabelTypographyForPdf(originalRoot, clonedRoot);
-
-    debugLogSectionDividers(originalRoot, window, 'live', 'H9-live', 'post-fix-v4');
-    debugLogSectionDividers(clonedRoot, view, 'clone', 'H9-clone', 'post-fix-v4');
-    // #region agent log
-    fetch('http://127.0.0.1:7522/ingest/1f926cf6-0018-4209-a608-d137d75a2924',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'703a1d'},body:JSON.stringify({sessionId:'703a1d',location:'downloadLearningRecordPdf.ts:prepareCloneForCapture',message:'clone prep summary',data:{bruteForcePass,oklabAfterPrep,cloneDividerCount:clonedRoot.querySelectorAll('[data-section-divider]').length,liveDividerCount:originalRoot.querySelectorAll('[data-section-divider]').length,pdfLayoutMode:'full-width-line-height',sectionTitles:[...originalRoot.querySelectorAll('[data-section-divider]')].map((n)=>n.textContent?.trim())},timestamp:Date.now(),runId:'post-fix-v4',hypothesisId:'H9'})}).catch(()=>{});
-    // #endregion
-
-    return { oklabAfterPrep, cloneNodeCount: cloneNodes.length, bruteForcePass };
 }
 
 function pickCanvasScale(element: HTMLElement): number {
@@ -533,12 +423,12 @@ function addCanvasAsSinglePdfPage(
     pdf.addImage(imgData, 'JPEG', offsetX, MARGIN_Y_IN, drawWidth, drawHeight);
 }
 
-export interface LearningRecordCanvasCapture {
+interface LearningRecordCanvasCapture {
     canvas: HTMLCanvasElement;
     imgData: string;
 }
 
-export async function captureLearningRecordCanvas(
+async function captureLearningRecordCanvas(
     root: HTMLElement
 ): Promise<LearningRecordCanvasCapture> {
     await document.fonts.ready;
@@ -546,8 +436,6 @@ export async function captureLearningRecordCanvas(
     const elements = collectElementsForCapture(root);
     const previousStyles = applyCaptureStyles(elements);
     const scale = pickCanvasScale(root);
-
-    debugLogSectionDividers(root, window, 'live', 'H9-capture-live', 'post-fix-v4');
 
     try {
         const canvas = await html2canvas(root, {
@@ -567,8 +455,6 @@ export async function captureLearningRecordCanvas(
             throw new Error('PDF capture produced an empty canvas');
         }
 
-        logDividerCanvasPaint(root, canvas, scale, 'post-fix-v4');
-
         return {
             canvas,
             imgData: canvas.toDataURL('image/jpeg', 0.92)
@@ -578,7 +464,7 @@ export async function captureLearningRecordCanvas(
     }
 }
 
-export function slugifyLearningRecordFilenamePart(value: string): string {
+function slugifyLearningRecordFilenamePart(value: string): string {
     return value
         .trim()
         .toLowerCase()

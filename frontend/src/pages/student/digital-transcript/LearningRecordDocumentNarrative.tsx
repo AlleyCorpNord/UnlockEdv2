@@ -19,6 +19,8 @@ import {
     type LearningRecordDocumentSource
 } from './learningRecordDocumentModel';
 
+import { LearningRecordSectionLabel } from './LearningRecordSectionLabel';
+
 const narrativeBodyClass =
     'whitespace-pre-wrap text-[14px] font-normal leading-[1.6] text-foreground';
 
@@ -26,29 +28,6 @@ const funnelAnswerClass =
     'mb-1 whitespace-pre-wrap text-[14px] font-normal leading-[1.6] text-foreground';
 
 const funnelAnswerGroupClass = '[&>*:last-child]:mb-0';
-
-function SectionLabel({
-    id,
-    children,
-    className
-}: {
-    id: string;
-    children: ReactNode;
-    className?: string;
-}) {
-    return (
-        <h3
-            id={id}
-            data-section-label
-            className={cn(
-                'text-[11px] font-semibold tracking-[0.08em] text-muted-foreground',
-                className
-            )}
-        >
-            {children}
-        </h3>
-    );
-}
 
 type NarrativeLabels = typeof DOCUMENT_PREVIEW_LABELS | typeof LEARNING_RECORD_PREVIEW_LABELS;
 
@@ -64,7 +43,6 @@ interface LearningRecordDocumentNarrativeProps {
     showEmptyHint: boolean;
     skeletonEmpty: boolean;
     filledSectionsOnly?: boolean;
-    emptyPh: string | undefined;
     answered: number;
     totalSlots: number;
     state: 'empty' | 'partial' | 'complete';
@@ -200,9 +178,9 @@ function FunnelPreviewNarrative({ source }: { source: LearningRecordDocumentSour
                                     aria-labelledby={labelId}
                                     className="break-inside-avoid"
                                 >
-                                    <SectionLabel id={labelId} className="pb-1 text-[10px]">
+                                    <LearningRecordSectionLabel id={labelId} className="pb-1 text-[10px]">
                                         {caption}
-                                    </SectionLabel>
+                                    </LearningRecordSectionLabel>
                                     <FunnelPreviewFieldContent source={source} field={field} />
                                 </section>
                             );
@@ -224,7 +202,6 @@ export function LearningRecordDocumentNarrative({
     showEmptyHint,
     skeletonEmpty,
     filledSectionsOnly = false,
-    emptyPh,
     answered,
     totalSlots,
     state,
@@ -275,9 +252,9 @@ export function LearningRecordDocumentNarrative({
                             headlineFilled && 'border-l-primary/60 bg-muted/15 dark:bg-muted/10'
                         )}
                     >
-                        <SectionLabel id="lr-doc-headline">
+                        <LearningRecordSectionLabel id="lr-doc-headline">
                             {DOCUMENT_PREVIEW_LABELS.headline}
-                        </SectionLabel>
+                        </LearningRecordSectionLabel>
                         {headlineFilled ? (
                             <p className="font-serif text-[20px] font-normal not-italic leading-[1.4] text-foreground">
                                 {source.oneSentence.trim()}
@@ -312,7 +289,7 @@ export function LearningRecordDocumentNarrative({
                 <>
                     {showPride ? (
                         <section aria-labelledby="lr-doc-pride" className="break-inside-avoid space-y-2">
-                            <SectionLabel id="lr-doc-pride">{labels.pride}</SectionLabel>
+                            <LearningRecordSectionLabel id="lr-doc-pride">{labels.pride}</LearningRecordSectionLabel>
                             {source.pride.trim() ? (
                                 <p className={narrativeBodyClass}>{source.pride.trim()}</p>
                             ) : (
@@ -330,7 +307,7 @@ export function LearningRecordDocumentNarrative({
 
                     {showStandout ? (
                         <section aria-labelledby="lr-doc-standout" className="break-inside-avoid space-y-2">
-                            <SectionLabel id="lr-doc-standout">{labels.standout}</SectionLabel>
+                            <LearningRecordSectionLabel id="lr-doc-standout">{labels.standout}</LearningRecordSectionLabel>
                             {source.standoutMoment.trim() ? (
                                 <p className={narrativeBodyClass}>{source.standoutMoment.trim()}</p>
                             ) : (
@@ -348,7 +325,7 @@ export function LearningRecordDocumentNarrative({
 
                     {showFinish ? (
                         <section aria-labelledby="lr-doc-finish" className="break-inside-avoid space-y-2">
-                            <SectionLabel id="lr-doc-finish">{labels.finish}</SectionLabel>
+                            <LearningRecordSectionLabel id="lr-doc-finish">{labels.finish}</LearningRecordSectionLabel>
                             {source.whatMadeYouFinish.trim() ? (
                                 <p className={narrativeBodyClass}>{source.whatMadeYouFinish.trim()}</p>
                             ) : (
@@ -366,7 +343,7 @@ export function LearningRecordDocumentNarrative({
 
                     {showConnects ? (
                         <section aria-labelledby="lr-doc-connects" className="break-inside-avoid space-y-2">
-                            <SectionLabel id="lr-doc-connects">{labels.connects}</SectionLabel>
+                            <LearningRecordSectionLabel id="lr-doc-connects">{labels.connects}</LearningRecordSectionLabel>
                             {source.goalConnection.trim() ? (
                                 <p className={narrativeBodyClass}>{source.goalConnection.trim()}</p>
                             ) : (
@@ -388,9 +365,9 @@ export function LearningRecordDocumentNarrative({
                                 aria-labelledby="lr-doc-advice"
                                 className="break-inside-avoid space-y-2 border-t border-border pt-5"
                             >
-                                <SectionLabel id="lr-doc-advice">
+                                <LearningRecordSectionLabel id="lr-doc-advice">
                                     {DOCUMENT_PREVIEW_LABELS.advice}
-                                </SectionLabel>
+                                </LearningRecordSectionLabel>
                                 {source.adviceToPeer.trim() ? (
                                     <blockquote className="m-0 border-none p-0 text-[14px] font-normal italic leading-[1.6] text-muted-foreground">
                                         {source.adviceToPeer.trim()}
@@ -432,7 +409,6 @@ export function LearningRecordDocumentNarrative({
 
                     {state === 'partial' &&
                     answered < totalSlots &&
-                    !emptyPh &&
                     !skeletonEmpty &&
                     !isRecord &&
                     !filledSectionsOnly ? (

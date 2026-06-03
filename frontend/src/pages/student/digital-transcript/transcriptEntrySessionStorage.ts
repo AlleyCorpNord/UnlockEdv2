@@ -255,6 +255,11 @@ function readDraftRaw(): TranscriptDraft | null {
     }
 }
 
+/** Read legacy single-draft blob from localStorage (used for hasDraft detection). */
+export function readTranscriptDraftFromStorage(): TranscriptDraft | null {
+    return readDraftRaw();
+}
+
 export function readTranscriptEntriesFromStorage(): TranscriptEntry[] {
     try {
         const raw = localStorage.getItem(getDigitalTranscriptStorageKeys().entries);

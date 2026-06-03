@@ -1,4 +1,9 @@
-import type { TranscriptDraft } from '@/types/digital-transcript';
+import type { TranscriptDraft, TranscriptEntry } from '@/types/digital-transcript';
+import {
+    countFunnelFieldsAnswered,
+    FUNNEL_FORM_FIELD_TOTAL
+} from './transcriptReflectionConfig';
+import type { LearningRecordFormVariant } from './learningRecordPrototypes';
 
 /** Fields rendered in the live document / print view. */
 export type LearningRecordDocumentSource = Pick<
@@ -118,9 +123,27 @@ export function hasFilledMetadataSections(source: LearningRecordDocumentSource):
     );
 }
 
-/** Funnel preview — left column is program and completion date only. */
-export function hasFilledFunnelMetadataSections(source: LearningRecordDocumentSource): boolean {
-    return isProgramSectionFilled(source) || isCompletedSectionFilled(source);
+export function getEntryQuestionsProgress(
+    entry: TranscriptEntry,
+    formVariant: LearningRecordFormVariant
+): { answered: number; total: number } {
+    if (formVariant === 'funnel') {
+        return {
+            answered: countFunnelFieldsAnswered(entry),
+            total: FUNNEL_FORM_FIELD_TOTAL
+        };
+    }
+    return {
+        answered: countAnsweredReflections(entry),
+        total: reflectionSlotsTotal()
+    };
+}
+
+export function getEntryQuestionsAnswered(
+    entry: TranscriptEntry,
+    formVariant: LearningRecordFormVariant
+): number {
+    return getEntryQuestionsProgress(entry, formVariant).answered;
 }
 
 /** How many of the 8 reflection prompts have a meaningful answer (per-achievement readiness). */

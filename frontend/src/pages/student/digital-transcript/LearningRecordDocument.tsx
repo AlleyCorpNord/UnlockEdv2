@@ -23,43 +23,12 @@ import {
     LearningRecordDocumentNarrative,
     type LearningRecordDocumentVariant
 } from './LearningRecordDocumentNarrative';
-
-function formatCompletedLong(dateStr: string): string | null {
-    if (!dateStr.trim()) return null;
-    return new Date(`${dateStr}T12:00:00`).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-}
+import { formatCompletionDateLong } from './learningRecordDateFormat';
+import { LearningRecordSectionLabel } from './LearningRecordSectionLabel';
 
 function confidenceSegments(level: string): number {
     if (!/^[1-5]$/.test(level)) return 0;
     return Number(level);
-}
-
-/** Scan + narrative section labels — 11px sentence case, document rhythm */
-function SectionLabel({
-    id,
-    children,
-    className
-}: {
-    id: string;
-    children: ReactNode;
-    className?: string;
-}) {
-    return (
-        <h3
-            id={id}
-            data-section-label
-            className={cn(
-                'text-[11px] font-semibold tracking-[0.08em] text-muted-foreground',
-                className
-            )}
-        >
-            {children}
-        </h3>
-    );
 }
 
 function PlaceholderText({ children }: { children: ReactNode }) {
@@ -118,11 +87,6 @@ interface LearningRecordDocumentProps {
     documentVariant?: LearningRecordDocumentVariant;
     /** Extra classes on the root article (e.g. flex layout from parent card). */
     className?: string;
-    /**
-     * When set, empty metadata and narrative slots use this label (muted italic)
-     * instead of the default instructional placeholders (entry-page preview).
-     */
-    emptyAnswerLabel?: string;
     /** Skeleton bars for empty slots (live achievements-record preview). */
     emptyPreviewVariant?: EmptyPreviewVariant;
     /** PDF export: render only sections with answers (no placeholders or skeletons). */
@@ -136,7 +100,6 @@ export function LearningRecordDocument({
     layout = 'default',
     documentVariant = 'default',
     className,
-    emptyAnswerLabel,
     emptyPreviewVariant = 'placeholder',
     filledSectionsOnly = false
 }: LearningRecordDocumentProps) {
@@ -144,12 +107,11 @@ export function LearningRecordDocument({
     const isFunnel = documentVariant === 'funnel';
     const isRecord = layout === 'record';
     const labels = isRecord ? LEARNING_RECORD_PREVIEW_LABELS : DOCUMENT_PREVIEW_LABELS;
-    const emptyPh = emptyAnswerLabel?.trim();
     const skeletonEmpty = !filledSectionsOnly && emptyPreviewVariant === 'skeleton';
     const showAllNarrativeSections =
         !isFunnel &&
         !filledSectionsOnly &&
-        (state !== 'empty' || Boolean(emptyPh) || skeletonEmpty);
+        (state !== 'empty' || skeletonEmpty);
 
     const showProgram = !filledSectionsOnly || isProgramSectionFilled(source);
     const showCompleted = isFunnel
@@ -175,14 +137,13 @@ export function LearningRecordDocument({
 
     function EmptySlot({ fallback, skeleton }: { fallback: ReactNode; skeleton: ReactNode }) {
         if (skeletonEmpty) return <>{skeleton}</>;
-        if (emptyPh) return <PlaceholderText>{emptyPh}</PlaceholderText>;
         return <>{fallback}</>;
     }
     const answered = countAnsweredReflections(source);
     const totalSlots = reflectionSlotsTotal();
     const readinessPct = Math.round((answered / totalSlots) * 100);
     const seg = confidenceSegments(source.confidence);
-    const dateShown = formatCompletedLong(source.completionDate);
+    const dateShown = formatCompletionDateLong(source.completionDate);
     const headlineFilled = Boolean(source.oneSentence.trim());
     const residentDisplayName = residentName.trim();
 
@@ -197,13 +158,11 @@ export function LearningRecordDocument({
             showEmptyHint={
                 !filledSectionsOnly &&
                 state === 'empty' &&
-                !emptyPh &&
                 !skeletonEmpty &&
                 !isRecord
             }
             skeletonEmpty={skeletonEmpty}
             filledSectionsOnly={filledSectionsOnly}
-            emptyPh={emptyPh}
             answered={answered}
             totalSlots={totalSlots}
             state={state}
@@ -254,9 +213,9 @@ export function LearningRecordDocument({
                                 <div className="flex items-start justify-between gap-4">
                                     {showProgram ? (
                                         <div className="min-w-0 flex-1 space-y-1">
-                                            <SectionLabel id="lr-funnel-program" className="text-[10px]">
+                                            <LearningRecordSectionLabel id="lr-funnel-program" className="text-[10px]">
                                                 Achievement
-                                            </SectionLabel>
+                                            </LearningRecordSectionLabel>
                                             <p className="text-sm text-foreground">
                                                 {source.programName.trim() ? (
                                                     source.programName.trim()
@@ -280,9 +239,9 @@ export function LearningRecordDocument({
                                                 !showProgram && 'ml-auto'
                                             )}
                                         >
-                                            <SectionLabel id="lr-funnel-completed" className="text-[10px]">
+                                            <LearningRecordSectionLabel id="lr-funnel-completed" className="text-[10px]">
                                                 {labels.completed}
-                                            </SectionLabel>
+                                            </LearningRecordSectionLabel>
                                             <p className="text-sm text-foreground">{dateShown}</p>
                                         </div>
                                     ) : null}
@@ -310,7 +269,7 @@ export function LearningRecordDocument({
                 <div className="flex min-w-0 flex-col gap-5 md:pr-5">
                     {showProgram ? (
                     <section aria-labelledby="lr-doc-program" className="break-inside-avoid space-y-1.5">
-                        <SectionLabel id="lr-doc-program">{labels.program}</SectionLabel>
+                        <LearningRecordSectionLabel id="lr-doc-program">{labels.program}</LearningRecordSectionLabel>
                         <div className="text-[18px] font-medium leading-snug text-foreground">
                             {source.programName.trim() ? (
                                 source.programName.trim()
@@ -326,7 +285,7 @@ export function LearningRecordDocument({
 
                     {showCompleted ? (
                     <section aria-labelledby="lr-doc-completed" className="break-inside-avoid space-y-1.5">
-                        <SectionLabel id="lr-doc-completed">{labels.completed}</SectionLabel>
+                        <LearningRecordSectionLabel id="lr-doc-completed">{labels.completed}</LearningRecordSectionLabel>
                         <div className="text-[13px] font-medium text-foreground">
                             {dateShown != null && dateShown !== '' ? (
                                 dateShown
@@ -345,7 +304,7 @@ export function LearningRecordDocument({
                         aria-labelledby="lr-doc-confidence"
                         className="break-inside-avoid space-y-2"
                     >
-                        <SectionLabel id="lr-doc-confidence">{labels.confidence}</SectionLabel>
+                        <LearningRecordSectionLabel id="lr-doc-confidence">{labels.confidence}</LearningRecordSectionLabel>
                         <div className="flex gap-1" role="img" aria-label={`Confidence ${seg} out of 5`}>
                             {[1, 2, 3, 4, 5].map((i) => (
                                 <div
@@ -371,7 +330,7 @@ export function LearningRecordDocument({
 
                     {showSkills ? (
                     <section aria-labelledby="lr-doc-skills" className="break-inside-avoid space-y-2">
-                        <SectionLabel id="lr-doc-skills">{labels.skills}</SectionLabel>
+                        <LearningRecordSectionLabel id="lr-doc-skills">{labels.skills}</LearningRecordSectionLabel>
                         {source.topSkills.length > 0 ? (
                             <ul className="flex list-none flex-wrap gap-1.5 p-0">
                                 {source.topSkills.map((skill, idx) => (

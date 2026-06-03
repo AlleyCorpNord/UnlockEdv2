@@ -1,7 +1,7 @@
 import type { TranscriptEntry } from '@/types/digital-transcript';
-import { countAnsweredReflections } from '@/pages/student/digital-transcript/learningRecordDocumentModel';
+import { getEntryQuestionsAnswered } from './learningRecordDocumentModel';
+import { completionDateSortKey } from './learningRecordDateFormat';
 import type { LearningRecordFormVariant } from './learningRecordPrototypes';
-import { countFunnelFieldsAnswered } from './transcriptReflectionConfig';
 
 export const LR_TABLE_SORT_STORAGE_KEY = 'lr_table_sort';
 
@@ -27,23 +27,6 @@ function isSortColumn(value: unknown): value is SortColumn {
 
 function isSortDirection(value: unknown): value is SortDirection {
     return typeof value === 'string' && SORT_DIRECTIONS.includes(value as SortDirection);
-}
-
-function getEntryQuestionsAnswered(
-    entry: TranscriptEntry,
-    formVariant: LearningRecordFormVariant
-): number {
-    if (formVariant === 'funnel') {
-        return countFunnelFieldsAnswered(entry);
-    }
-    return countAnsweredReflections(entry);
-}
-
-function completionDateSortKey(entry: TranscriptEntry): number | null {
-    const raw = entry.completionDate.trim();
-    if (!raw) return null;
-    const time = new Date(raw + 'T12:00:00').getTime();
-    return Number.isNaN(time) ? null : time;
 }
 
 function addedOnSortKey(entry: TranscriptEntry): number {

@@ -7,20 +7,12 @@ import {
     editorFormSlotsTotal
 } from './learningRecordDocumentModel';
 import type { LearningRecordFormVariant } from './learningRecordPrototypes';
+import { formatCompletionDateLong } from './learningRecordDateFormat';
 import { AchievementForm } from './AchievementForm';
 import { AchievementFormCategories } from './AchievementFormCategories';
 
-function formatCompletedShort(iso: string): string {
-    if (!iso.trim()) return '';
-    return new Date(`${iso}T12:00:00`).toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-}
-
 function collapsedDateLine(entry: TranscriptEntry): string {
-    const datePart = formatCompletedShort(entry.completionDate);
+    const datePart = formatCompletionDateLong(entry.completionDate);
     return datePart ? `Completed ${datePart}` : 'Completion date not set';
 }
 

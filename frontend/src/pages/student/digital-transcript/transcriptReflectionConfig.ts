@@ -31,7 +31,6 @@ export interface ReflectionStep {
     key: ReflectionAnswerKey;
     kind: ReflectionStepKind;
     editorLabel: string;
-    previewLabel: string;
     /** Shown under the main label (e.g. Q1 tags). */
     editorSubtitle?: string;
 }
@@ -133,72 +132,50 @@ export const REFLECTION_STEPS: readonly ReflectionStep[] = [
         kind: 'tags',
         editorLabel: 'What new skill or knowledge did this program give you?',
         editorSubtitle:
-            'These are your top skills from this program. Choose up to 5.',
-        previewLabel: 'Skills gained'
+            'These are your top skills from this program. Choose up to 5.'
     },
     {
         key: 'whatMadeYouFinish',
         kind: 'text',
-        editorLabel: 'What made you finish it?',
-        previewLabel: 'What made you finish it?'
+        editorLabel: 'What made you finish it?'
     },
     {
         key: 'confidence',
         kind: 'confidence',
         editorLabel:
-            'How confident do you feel about your future since completing this program?',
-        previewLabel:
             'How confident do you feel about your future since completing this program?'
     },
     {
         key: 'pride',
         kind: 'text',
-        editorLabel: 'Why are you proud of it?',
-        previewLabel: 'Why are you proud of it?'
+        editorLabel: 'Why are you proud of it?'
     },
     {
         key: 'goalConnection',
         kind: 'text',
         editorLabel:
-            "What does this connect to for a goal, job, or career you're working toward now or in the future?",
-        previewLabel:
             "What does this connect to for a goal, job, or career you're working toward now or in the future?"
     },
     {
         key: 'standoutMoment',
         kind: 'text',
-        editorLabel: 'Was there a moment or someone from this program that stood out for you?',
-        previewLabel: 'Was there a moment or someone from this program that stood out for you?'
+        editorLabel: 'Was there a moment or someone from this program that stood out for you?'
     },
     {
         key: 'adviceToPeer',
         kind: 'text',
-        editorLabel: "What's one thing you'd tell another resident about this program?",
-        previewLabel: "What's one thing you'd tell another resident about this program?"
+        editorLabel: "What's one thing you'd tell another resident about this program?"
     },
     {
         key: 'oneSentence',
         kind: 'text',
-        editorLabel: 'How would you explain this program in one sentence?',
-        previewLabel: 'How would you explain this program in one sentence?'
+        editorLabel: 'How would you explain this program in one sentence?'
     }
 ] as const;
 
 export function reflectionStepByKey(key: ReflectionAnswerKey): ReflectionStep | undefined {
     return REFLECTION_STEPS.find((s) => s.key === key);
 }
-
-/** Funnel prototype — flat editor order (metadata is separate in the form). */
-export const REFLECTION_STEPS_FUNNEL_ORDER: readonly ReflectionAnswerKey[] = [
-    'topSkills',
-    'whatMadeYouFinish',
-    'confidence',
-    'pride',
-    'goalConnection',
-    'standoutMoment',
-    'adviceToPeer',
-    'oneSentence'
-] as const;
 
 /** Funnel stepped form — field keys per section. */
 export type FunnelStepField =
@@ -527,15 +504,6 @@ export function funnelPreviewFieldAnswered(
     }
 }
 
-/** True when every countable field in the funnel step has a non-empty answer. */
-export function isFunnelStepComplete(stepIndex: number, entry: TranscriptEntry): boolean {
-    const step = FUNNEL_FORM_STEPS[stepIndex];
-    if (!step) return false;
-    return step.fields
-        .filter((field) => field !== 'completionDate')
-        .every((field) => funnelStepFieldAnswered(entry, field));
-}
-
 export function countFunnelStepFieldsAnswered(
     stepIndex: number,
     entry: TranscriptEntry
@@ -602,8 +570,6 @@ export const REFLECTION_CATEGORIES: readonly ReflectionCategorySection[] = [
         stepKeys: ['oneSentence']
     }
 ] as const;
-
-export const REFLECTION_CATEGORY_SECTION_TOTAL = REFLECTION_CATEGORIES.length;
 
 /** 1–5 scale labels (confidence) — shared by editor, preview, and a11y. */
 export const CONFIDENCE_RADIO_OPTIONS = [

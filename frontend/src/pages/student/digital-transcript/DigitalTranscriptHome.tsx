@@ -33,16 +33,9 @@ import {
 import { EmptyState, PageHeader } from '@/components/shared';
 import { useTranscriptDraft } from '@/hooks/useTranscriptDraft';
 import { cn } from '@/lib/utils';
-import {
-    downloadAllLearningRecordAchievementsPdf,
-    downloadLearningRecordPdf,
-    learningRecordPdfFilename
-} from '@/utils/downloadLearningRecordPdf';
+import { downloadAllLearningRecordAchievementsPdf, learningRecordPdfFilename } from '@/utils/downloadLearningRecordPdf';
 import type { TranscriptEntry } from '@/types/digital-transcript';
-import {
-    countAnsweredReflections,
-    reflectionSlotsTotal
-} from '@/pages/student/digital-transcript/learningRecordDocumentModel';
+import { getEntryQuestionsProgress } from '@/pages/student/digital-transcript/learningRecordDocumentModel';
 import { CONFIDENCE_LEVEL_SOLID } from './confidenceLevelVisual';
 import { getDigitalTranscriptBasePath, setDigitalTranscriptStorageContext } from './digitalTranscriptRoutes';
 import {
@@ -53,11 +46,15 @@ import { DigitalTranscriptEyebrow, DigitalTranscriptShell } from './DigitalTrans
 import { LearningRecordExportContent } from './LearningRecordExportContent';
 import { learningRecordResidentDisplayName } from './learningRecordResidentName';
 import { TranscriptResumePreview } from './TranscriptResumePreview';
+import { formatCompletionDateTable } from './learningRecordDateFormat';
 import {
-    countFunnelFieldsAnswered,
-    funnelCompletionTier,
-    FUNNEL_FORM_FIELD_TOTAL
-} from './transcriptReflectionConfig';
+    downloadLearningRecordPdfFromRoot,
+    learningRecordPdfCaptureClassName,
+    learningRecordPdfCaptureStyle,
+    showLearningRecordPdfExportError,
+    waitForExportPaint
+} from './learningRecordPdfExport';
+import { funnelCompletionTier } from './transcriptReflectionConfig';
 import { createEmptyTranscriptEntry } from './transcriptEntrySessionStorage';
 import {
     readTableSortFromSession,
@@ -71,7 +68,8 @@ import {
     LEARNING_RECORD_BUTTON_SIZE,
     learningRecordIconButtonClassName,
     learningRecordOutlineButtonClassName,
-    learningRecordPrimaryButtonClassName
+    learningRecordPrimaryButtonClassName,
+    learningRecordQuestionsBadgeClassName
 } from './learningRecordButtons';
 
 /** Decorative sample for the home CTA thumbnail (not persisted). */
@@ -103,15 +101,6 @@ const FUNNEL_SUBTITLE =
 
 const primaryCtaClassName = cn(learningRecordPrimaryButtonClassName, 'sm:min-w-[11rem]');
 
-function formatProgramCompletedDate(entry: TranscriptEntry): string {
-    if (!entry.completionDate.trim()) return '—';
-    return new Date(entry.completionDate + 'T12:00:00').toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-}
-
 function formatSavedOn(iso: string): string {
     if (!iso.trim()) return '—';
     return new Date(iso).toLocaleDateString(undefined, {
@@ -126,22 +115,6 @@ function savedOnDeviceLabel(count: number): string {
     return `You have ${count} ${word} saved on this device`;
 }
 
-function getEntryQuestionsProgress(
-    entry: TranscriptEntry,
-    formVariant: LearningRecordFormVariant
-): { answered: number; total: number } {
-    if (formVariant === 'funnel') {
-        return {
-            answered: countFunnelFieldsAnswered(entry),
-            total: FUNNEL_FORM_FIELD_TOTAL
-        };
-    }
-    return {
-        answered: countAnsweredReflections(entry),
-        total: reflectionSlotsTotal()
-    };
-}
-
 function QuestionsAnsweredBadge({
     answered,
     total
@@ -153,10 +126,7 @@ function QuestionsAnsweredBadge({
     const bg = CONFIDENCE_LEVEL_SOLID[tier - 1];
     return (
         <span
-            className={cn(
-                'inline-flex items-center rounded-md border border-border/60 px-2.5 py-0.5 text-xs font-medium text-black',
-                bg
-            )}
+            className={cn(learningRecordQuestionsBadgeClassName, bg)}
         >
             {answered} / {total}
         </span>
@@ -322,7 +292,7 @@ function SavedEntriesSection({
                                                         </span>
                                                         <p className="mt-1 text-xs font-normal text-muted-foreground sm:hidden">
                                                             Completed{' '}
-                                                            {formatProgramCompletedDate(entry)}
+                                                            {formatCompletionDateTable(entry.completionDate)}
                                                         </p>
                                                         <div className="mt-3 md:hidden">
                                                             <QuestionsAnsweredBadge
@@ -336,7 +306,7 @@ function SavedEntriesSection({
                                                         </p>
                                                     </TableCell>
                                                     <TableCell className="hidden w-[200px] align-middle text-foreground sm:table-cell">
-                                                        {formatProgramCompletedDate(entry)}
+                                                        {formatCompletionDateTable(entry.completionDate)}
                                                     </TableCell>
                                                     <TableCell className="hidden w-[200px] align-middle md:table-cell">
                                                         <QuestionsAnsweredBadge
@@ -447,12 +417,6 @@ export default function DigitalTranscriptHome() {
         setTableSort((current) => toggleTableSort(current, column));
     }, []);
 
-    const waitForExportPaint = useCallback(async () => {
-        await new Promise<void>((resolve) => {
-            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-        });
-    }, []);
-
     const handleDownloadEntry = useCallback(
         async (entry: TranscriptEntry) => {
             if (isDownloadBusy) return;
@@ -464,27 +428,15 @@ export default function DigitalTranscriptHome() {
             });
 
             try {
-                await waitForExportPaint();
-
-                const root = exportRootRef.current;
-                if (!root) {
-                    throw new Error('Export content not ready');
-                }
-
-                await downloadLearningRecordPdf(
-                    root,
-                    learningRecordPdfFilename(residentName)
-                );
-                toast.success('Learning record downloaded');
-            } catch (err) {
-                console.error('Learning record PDF export failed:', err);
-                toast.error('Could not download PDF. Please try again.');
+                await downloadLearningRecordPdfFromRoot(exportRootRef.current, residentName);
+            } catch {
+                showLearningRecordPdfExportError();
             } finally {
                 setExportActive(false);
                 setDownloadingEntryId(null);
             }
         },
-        [isDownloadBusy, residentName, waitForExportPaint]
+        [isDownloadBusy, residentName]
     );
 
     const handleDownloadAll = useCallback(async () => {
@@ -520,15 +472,14 @@ export default function DigitalTranscriptHome() {
                 learningRecordPdfFilename(residentName)
             );
             toast.success('Learning record downloaded');
-        } catch (err) {
-            console.error('Learning record PDF export failed:', err);
-            toast.error('Could not download PDF. Please try again.');
+        } catch {
+            showLearningRecordPdfExportError();
         } finally {
             setExportActive(false);
             setExportRows([]);
             setIsDownloadingAll(false);
         }
-    }, [isDownloadBusy, residentName, waitForExportPaint]);
+    }, [isDownloadBusy, residentName]);
 
     const handleConfirmDelete = useCallback(() => {
         if (!deleteTarget || isDeleting) return;
@@ -585,8 +536,8 @@ export default function DigitalTranscriptHome() {
                     <div
                         data-slot="learning-record-pdf-capture"
                         aria-hidden
-                        className="pointer-events-none fixed top-0 left-0 w-[8in] max-w-[768px] overflow-visible bg-background"
-                        style={{ zIndex: -1, clipPath: 'inset(50%)' }}
+                        className={learningRecordPdfCaptureClassName}
+                        style={learningRecordPdfCaptureStyle}
                     >
                         <LearningRecordExportContent
                             ref={exportRootRef}

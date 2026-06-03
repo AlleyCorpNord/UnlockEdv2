@@ -1,7 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { TranscriptEntry } from '@/types/digital-transcript';
-import { cn } from '@/lib/utils';
 import { FUNNEL_FIELD_DESCRIPTIONS } from './transcriptReflectionConfig';
 import { learningRecordQuestionHeaderClassName } from './learningRecordButtons';
 
@@ -11,8 +10,6 @@ interface AchievementFormMetadataProps {
     showSaveErrors?: boolean;
     /** Categories variant — alias for showSaveErrors. */
     showDoneErrors?: boolean;
-    /** When true, adds a bottom border to separate metadata from reflection sections. */
-    showSectionDivider?: boolean;
     /** Funnel variant — optional completion date, achievement labels. */
     variant?: 'default' | 'funnel';
 }
@@ -22,7 +19,6 @@ export function AchievementFormMetadata({
     onChange,
     showSaveErrors,
     showDoneErrors,
-    showSectionDivider = false,
     variant = 'default'
 }: AchievementFormMetadataProps) {
     const showErrors = showSaveErrors ?? showDoneErrors ?? false;
@@ -35,7 +31,7 @@ export function AchievementFormMetadata({
     return (
         <div
             data-slot="achievement-form-metadata"
-            className={cn('space-y-8', showSectionDivider && 'border-b border-border/70 pb-6')}
+            className="space-y-8"
         >
             <div>
                 <div className={learningRecordQuestionHeaderClassName}>

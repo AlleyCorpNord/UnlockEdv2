@@ -1,16 +1,11 @@
 import { useCallback, useRef, useState } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { Download, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/auth/useAuth';
 import { Button } from '@/components/ui/button';
 import { useTranscriptDraft } from '@/hooks/useTranscriptDraft';
 import { cn } from '@/lib/utils';
-import {
-    downloadLearningRecordPdf,
-    learningRecordPdfFilename
-} from '@/utils/downloadLearningRecordPdf';
 import { getDigitalTranscriptBasePath, setDigitalTranscriptStorageContext } from './digitalTranscriptRoutes';
 import { getLearningRecordFormVariant } from './learningRecordPrototypes';
 import {
@@ -21,8 +16,18 @@ import {
 } from './DigitalTranscriptWysiwygEntry';
 import { DigitalTranscriptBackLink, DigitalTranscriptShell, dtPageSurface } from './DigitalTranscriptShell';
 import { LearningRecordExportContent } from './LearningRecordExportContent';
-import { learningRecordOutlineButtonClassName, LEARNING_RECORD_BUTTON_SIZE } from './learningRecordButtons';
+import {
+    learningRecordOutlineButtonClassName,
+    LEARNING_RECORD_BUTTON_SIZE,
+    learningRecordBackLinkClassName
+} from './learningRecordButtons';
 import { learningRecordResidentDisplayName } from './learningRecordResidentName';
+import {
+    downloadLearningRecordPdfFromRoot,
+    learningRecordPdfCaptureClassName,
+    learningRecordPdfCaptureStyle,
+    showLearningRecordPdfExportError
+} from './learningRecordPdfExport';
 import { readLearningRecordExportRows } from './transcriptEntrySessionStorage';
 import type { TranscriptEntry } from '@/types/digital-transcript';
 
@@ -140,23 +145,9 @@ export default function DigitalTranscriptEntryPage() {
         });
 
         try {
-            await new Promise<void>((resolve) => {
-                requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-            });
-
-            const root = exportRootRef.current;
-            if (!root) {
-                throw new Error('Export content not ready');
-            }
-
-            await downloadLearningRecordPdf(
-                root,
-                learningRecordPdfFilename(residentName)
-            );
-            toast.success('Learning record downloaded');
-        } catch (err) {
-            console.error('Learning record PDF export failed:', err);
-            toast.error('Could not download PDF. Please try again.');
+            await downloadLearningRecordPdfFromRoot(exportRootRef.current, residentName);
+        } catch {
+            showLearningRecordPdfExportError();
         } finally {
             setExportActive(false);
             setIsExporting(false);
@@ -186,8 +177,8 @@ export default function DigitalTranscriptEntryPage() {
                     <div
                         data-slot="learning-record-pdf-capture"
                         aria-hidden
-                        className="pointer-events-none fixed top-0 left-0 w-[8in] max-w-[768px] overflow-visible bg-background"
-                        style={{ zIndex: -1, clipPath: 'inset(50%)' }}
+                        className={learningRecordPdfCaptureClassName}
+                        style={learningRecordPdfCaptureStyle}
                     >
                         <LearningRecordExportContent
                             ref={exportRootRef}
@@ -212,7 +203,7 @@ export default function DigitalTranscriptEntryPage() {
                             variant="ghost"
                             size={LEARNING_RECORD_BUTTON_SIZE}
                             data-slot="digital-transcript-back"
-                            className="group h-10 gap-1.5 text-primary hover:bg-muted hover:text-primary"
+                            className={learningRecordBackLinkClassName}
                             onClick={navigateHome}
                         >
                             <span

@@ -20,4 +20,10 @@ export const learningRecordCheckedCheckboxClassName =
 /** Label + optional description block above a form control. */
 export const learningRecordQuestionHeaderClassName = 'flex flex-col gap-0 pb-3';
 
+export const learningRecordBackLinkClassName =
+    'group h-10 gap-1.5 text-primary hover:bg-muted hover:text-primary';
+
+export const learningRecordQuestionsBadgeClassName =
+    'inline-flex items-center rounded-md border border-border/60 px-2.5 py-0.5 text-xs font-medium text-black';
+
 export const learningRecordIconButtonClassName = 'size-10 shrink-0';

@@ -4,14 +4,7 @@ import { cn } from '@/lib/utils';
 import type { TranscriptDraft, TranscriptEntry } from '@/types/digital-transcript';
 import { LearningRecordDocument } from './LearningRecordDocument';
 import type { LearningRecordDocumentSource } from './learningRecordDocumentModel';
-
-function residentDisplayName(user: ReturnType<typeof useAuth>['user']): string {
-    if (!user) return 'Resident';
-    const first = typeof user.name_first === 'string' ? user.name_first.trim() : '';
-    const last = typeof user.name_last === 'string' ? user.name_last.trim() : '';
-    const full = [first, last].filter(Boolean).join(' ');
-    return full.length > 0 ? full : 'Resident';
-}
+import { learningRecordResidentDisplayName } from './learningRecordResidentName';
 
 interface TranscriptResumePreviewProps {
     source: TranscriptEntry | TranscriptDraft;
@@ -33,7 +26,7 @@ export function TranscriptResumePreview({
     hideReadiness = false
 }: TranscriptResumePreviewProps) {
     const { user } = useAuth();
-    const name = residentDisplayName(user);
+    const name = learningRecordResidentDisplayName(user);
     const isPaper = variant === 'paper';
     const doc: LearningRecordDocumentSource = {
         programName: source.programName,
