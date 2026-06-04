@@ -30,3 +30,4 @@ jar
 /tmp
 /csvs/zims/*.zim
 /.claude
+.worktrees/
