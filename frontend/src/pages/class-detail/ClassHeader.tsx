@@ -24,6 +24,7 @@ interface StatCardsProps {
     cls: Class;
     attendanceRate: number;
     atRiskCount: number;
+    isCanvasClass?: boolean;
 }
 
 function getNextClassDate(cls: Class): { date: string; time: string } | null {
@@ -149,7 +150,7 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
                 <InfoCard
                     label="Duration"
                     value={
-                        cls.start_dt
+                        cls.start_dt && new Date(cls.start_dt).getFullYear() >= 1900
                             ? `${formatDate(cls.start_dt)} to ${cls.end_dt ? formatDate(cls.end_dt) : 'Ongoing'}`
                             : 'Not set'
                     }
@@ -184,7 +185,8 @@ export function ClassHeader({ cls, onMutate }: ClassHeaderProps) {
 export function StatCards({
     cls,
     attendanceRate,
-    atRiskCount
+    atRiskCount,
+    isCanvasClass = false
 }: StatCardsProps) {
     const avgRate = Math.round(attendanceRate);
     const capacityPct =
@@ -198,18 +200,26 @@ export function StatCards({
                     <Users className="size-5 text-[#556830] shrink-0" />
                     <h3 className="text-[#203622] truncate">Enrollment</h3>
                 </div>
-                <div className="text-3xl text-[#203622] mb-2">
-                    {cls.enrolled} / {cls.capacity}
-                </div>
-                <Progress
-                    value={capacityPct}
-                    className="h-2 mb-3"
-                    indicatorClassName="bg-[#556830]"
-                />
-                <div className="text-sm text-gray-600">
-                    {spotsAvailable} {spotsAvailable === 1 ? 'spot' : 'spots'}{' '}
-                    available
-                </div>
+                {isCanvasClass ? (
+                    <div className="text-3xl text-[#203622]">
+                        {cls.enrolled}
+                    </div>
+                ) : (
+                    <>
+                        <div className="text-3xl text-[#203622] mb-2">
+                            {cls.enrolled} / {cls.capacity}
+                        </div>
+                        <Progress
+                            value={capacityPct}
+                            className="h-2 mb-3"
+                            indicatorClassName="bg-[#556830]"
+                        />
+                        <div className="text-sm text-gray-600">
+                            {spotsAvailable}{' '}
+                            {spotsAvailable === 1 ? 'spot' : 'spots'} available
+                        </div>
+                    </>
+                )}
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-6">

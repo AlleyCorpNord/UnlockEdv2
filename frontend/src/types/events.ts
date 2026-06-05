@@ -72,9 +72,10 @@ export interface FacilityProgramClassEvent extends ProgramClassEvent {
     end: Date;
     frequency: string;
     override_id: number;
-    linked_override_event: FacilityProgramClassEvent;
+    linked_override_event: FacilityProgramClassEvent | null;
     credit_types: string;
     class_status: SelectedClassStatus;
+    is_canvas_event?: boolean;
 }
 
 export interface Instructor {

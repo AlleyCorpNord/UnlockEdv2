@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, ComponentProps } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, canSwitchFacility } from '@/auth/useAuth';
@@ -22,10 +22,10 @@ import {
     AcademicCapIcon,
     UsersIcon,
     ChartBarIcon,
-    InformationCircleIcon,
     RectangleStackIcon,
     ListBulletIcon
 } from '@heroicons/react/24/outline';
+import { InfoTooltip, PageHeader } from '@/components/shared';
 import {
     AlertCircle,
     Calendar,
@@ -34,6 +34,18 @@ import {
     Clock,
     ExternalLink
 } from 'lucide-react';
+
+function SurfaceCard({ className, ...props }: ComponentProps<'div'>) {
+    return (
+        <div
+            className={cn(
+                'bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626]',
+                className
+            )}
+            {...props}
+        />
+    );
+}
 
 export default function Dashboard() {
     const { user } = useAuth();
@@ -123,14 +135,11 @@ function FacilityAdminView({
 
     return (
         <div>
-            <div className="mb-6">
-                <h1 className="text-[1.5rem] leading-[1.5] font-medium font-sans text-[#203622] dark:text-white mb-2">
-                    Facility Dashboard
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                    {facilityName}
-                </p>
-            </div>
+            <PageHeader
+                title="Facility Dashboard"
+                subtitle={facilityName}
+                className="mb-[15px]"
+            />
 
             <MetricCards stats={stats} onNavigate={navigate} />
 
@@ -178,11 +187,7 @@ function DeptAdminView({
 
     return (
         <div>
-            <div className="mb-6">
-                <h1 className="text-[1.5rem] leading-[1.5] font-medium font-sans text-[#203622] dark:text-white mb-2">
-                    Department Overview
-                </h1>
-            </div>
+            <PageHeader title="Department Overview" className="mb-[15px]" />
 
             <MetricCards stats={stats} onNavigate={navigate} />
 
@@ -230,25 +235,18 @@ function MetricCard({
     tooltipAction
 }: MetricCardProps) {
     return (
-        <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626] p-4">
+        <SurfaceCard className="p-4">
             <div className="flex items-center gap-3 mb-3">
                 <div className={cn('p-2 rounded', iconBg)}>{icon}</div>
                 <div className="text-2xl text-[#203622] dark:text-white">
                     {value}
                 </div>
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button className="ml-auto">
-                            <InformationCircleIcon className="size-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-gray-900 text-white max-w-xs">
-                        <p className={tooltipAction ? 'mb-2' : undefined}>
-                            {tooltip}
-                        </p>
-                        {tooltipAction}
-                    </TooltipContent>
-                </Tooltip>
+                <InfoTooltip className="ml-auto">
+                    <p className={tooltipAction ? 'mb-2' : undefined}>
+                        {tooltip}
+                    </p>
+                    {tooltipAction}
+                </InfoTooltip>
             </div>
             <div className="text-sm text-gray-600 dark:text-gray-400">
                 {label}
@@ -256,7 +254,7 @@ function MetricCard({
             <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                 {subtitle}
             </div>
-        </div>
+        </SurfaceCard>
     );
 }
 
@@ -324,7 +322,7 @@ function TodaysSchedule({
         }, [items]);
 
     return (
-        <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626]">
+        <SurfaceCard>
             <div className="border-b border-gray-200 dark:border-[#262626] px-6 py-4 flex items-center justify-between">
                 <div>
                     <h2 className="text-[#203622] dark:text-white">
@@ -393,7 +391,7 @@ function TodaysSchedule({
                     </div>
                 ) : (
                     <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                        <Calendar className="size-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                        <Calendar className="size-12 mx-auto mb-[15px] text-gray-300 dark:text-gray-600" />
                         <p>
                             {isLoading
                                 ? "Loading today's schedule..."
@@ -402,7 +400,7 @@ function TodaysSchedule({
                     </div>
                 )}
             </div>
-        </div>
+        </SurfaceCard>
     );
 }
 
@@ -439,7 +437,7 @@ function MissingAttendanceWidget({
     const isDepartment = variant === 'department';
 
     return (
-        <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626] p-6">
+        <SurfaceCard className="p-6">
             <div className="flex items-center gap-2 mb-4">
                 <AlertCircle className="size-5 text-[#F1B51C]" />
                 <h3 className="text-[#203622] dark:text-white">
@@ -449,7 +447,7 @@ function MissingAttendanceWidget({
 
             {missingAttendance.length > 0 ? (
                 <>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-[15px]">
                         {isDepartment
                             ? 'Past 3 days - across all facilities'
                             : 'Past 3 days'}
@@ -534,13 +532,13 @@ function MissingAttendanceWidget({
                     <p className="text-center">All attendance up to date</p>
                 </div>
             )}
-        </div>
+        </SurfaceCard>
     );
 }
 
 function QuickActions({ navigate }: { navigate: (path: string) => void }) {
     return (
-        <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626] p-6">
+        <SurfaceCard className="p-6">
             <h3 className="text-[#203622] dark:text-white mb-4">
                 Quick Actions
             </h3>
@@ -575,23 +573,23 @@ function QuickActions({ navigate }: { navigate: (path: string) => void }) {
                     </TooltipContent>
                 </Tooltip>
             </div>
-        </div>
+        </SurfaceCard>
     );
 }
 
 function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
     if (rows.length === 0) {
         return (
-            <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626] p-6">
+            <SurfaceCard className="p-6">
                 <p className="text-gray-600 dark:text-gray-400 text-sm text-center py-4">
                     No facility data available.
                 </p>
-            </div>
+            </SurfaceCard>
         );
     }
 
     return (
-        <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#262626] overflow-hidden">
+        <SurfaceCard className="overflow-hidden">
             <table className="w-full">
                 <thead className="bg-[#E2E7EA] dark:bg-[#262626] border-b border-gray-200 dark:border-[#262626]">
                     <tr>
@@ -610,37 +608,23 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
                         <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
                             <div className="flex items-center gap-1">
                                 Missing Attendance
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button>
-                                            <InformationCircleIcon className="size-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-gray-900 text-white max-w-xs">
-                                        <p>
-                                            Classes where attendance hasn't been
-                                            recorded yet (past 3 days)
-                                        </p>
-                                    </TooltipContent>
-                                </Tooltip>
+                                <InfoTooltip iconClassName="size-3.5">
+                                    <p>
+                                        Classes where attendance hasn't been
+                                        recorded yet (past 3 days)
+                                    </p>
+                                </InfoTooltip>
                             </div>
                         </th>
                         <th className="text-left px-6 py-3 text-sm text-[#203622] dark:text-white">
                             <div className="flex items-center gap-1">
                                 Attendance Concerns
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button>
-                                            <InformationCircleIcon className="size-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-gray-900 text-white max-w-xs">
-                                        <p>
-                                            Classes with patterns of high
-                                            resident absences (engagement issue)
-                                        </p>
-                                    </TooltipContent>
-                                </Tooltip>
+                                <InfoTooltip iconClassName="size-3.5">
+                                    <p>
+                                        Classes with patterns of high
+                                        resident absences (engagement issue)
+                                    </p>
+                                </InfoTooltip>
                             </div>
                         </th>
                     </tr>
@@ -713,7 +697,7 @@ function FacilityHealthTable({ rows }: { rows: FacilityHealthSummary[] }) {
                     ))}
                 </tbody>
             </table>
-        </div>
+        </SurfaceCard>
     );
 }
 

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useUrlPagination } from '@/hooks/useUrlPagination';
 import { useNavigate, Link } from 'react-router-dom';
 import useSWR from 'swr';
 import { useAuth, canSwitchFacility } from '@/auth/useAuth';
@@ -44,9 +45,12 @@ import {
     AlertCircle,
     Filter,
     MapPin,
-    Users
+    Users,
+    RefreshCw
 } from 'lucide-react';
-import { Pagination } from '@/components/shared';
+
+const CANVAS_CLASS_ID_OFFSET = 100_000_000;
+import { Pagination } from '@/components/Pagination';
 import { TakeAttendanceModal } from './class-detail/TakeAttendanceModal';
 import { BulkCancelClassesModal } from '@/components/BulkCancelClassesModal';
 
@@ -61,8 +65,9 @@ const STATUS_OPTIONS: { label: string; value: string }[] = [
 ];
 
 function formatDateRangeFull(startDt: string, endDt: string): string {
-    const fmt = (dt: string) => {
+    const fmt = (dt: string): string => {
         const d = new Date(dt);
+        if (Number.isNaN(d.getTime()) || d.getFullYear() < 1900) return '';
         return d.toLocaleDateString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -71,6 +76,7 @@ function formatDateRangeFull(startDt: string, endDt: string): string {
     };
     if (!startDt) return '';
     const start = fmt(startDt);
+    if (!start) return '';
     const end = endDt ? fmt(endDt) : '';
     return end ? `${start} - ${end}` : start;
 }
@@ -93,8 +99,7 @@ export default function ClassesPage() {
     const [programSearch, setProgramSearch] = useState('');
     const [attendanceClass, setAttendanceClass] = useState<Class | null>(null);
     const [showBulkCancel, setShowBulkCancel] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(20);
+    const { page: currentPage, perPage: itemsPerPage, setPage: setCurrentPage, setPerPage: setItemsPerPage } = useUrlPagination();
 
     const crossFacility = user ? canSwitchFacility(user) : false;
 
@@ -119,7 +124,9 @@ export default function ClassesPage() {
 
     const facilityClasses = useMemo(() => {
         if (crossFacility || !user) return allClasses;
-        return allClasses.filter((c) => c.facility_id === user.facility.id);
+        return allClasses.filter(
+            (c) => c.id >= CANVAS_CLASS_ID_OFFSET || c.facility_id === user.facility.id
+        );
     }, [allClasses, crossFacility, user]);
 
     const programOptions = useMemo(() => {
@@ -216,7 +223,7 @@ export default function ClassesPage() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery, todayOnly, attendanceConcerns, facilityFilter, programFilter, statusFilter]);
+    }, [searchQuery, todayOnly, attendanceConcerns, facilityFilter, programFilter, statusFilter, setCurrentPage]);
 
     const paginatedClasses = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
@@ -397,6 +404,9 @@ export default function ClassesPage() {
                                 <th className="text-left px-6 py-4 text-sm text-[#203622] w-[10%]">
                                     Status
                                 </th>
+                                <th className="text-left px-6 py-4 text-sm text-[#203622] w-[8%]">
+                                    Source
+                                </th>
                                 <th className="text-left px-6 py-4 text-sm text-[#203622] w-[14%]">
                                     Actions
                                 </th>
@@ -406,7 +416,7 @@ export default function ClassesPage() {
                             {paginatedClasses.length === 0 ? (
                                 <tr>
                                     <td
-                                        colSpan={6}
+                                        colSpan={7}
                                         className="px-6 py-12 text-center text-gray-500"
                                     >
                                         <Users className="size-12 mx-auto mb-3 text-gray-300" />
@@ -423,11 +433,7 @@ export default function ClassesPage() {
                                         key={cls.id}
                                         cls={cls}
                                         showFacility={crossFacility}
-                                        onClick={() =>
-                                            navigate(
-                                                `/program-classes/${cls.id}/detail`
-                                            )
-                                        }
+                                        onClick={() => navigate(`/program-classes/${cls.id}/detail`)}
                                         onAttendance={() =>
                                             setAttendanceClass(cls)
                                         }
@@ -630,18 +636,22 @@ function ClassRow({
 }: {
     cls: Class;
     showFacility: boolean;
-    onClick: () => void;
+    onClick?: () => void;
     onAttendance: () => void;
 }) {
     const schedule = getClassSchedule(cls);
     const today = isClassToday(cls);
     const enrollPct =
         cls.capacity > 0 ? (cls.enrolled / cls.capacity) * 100 : 0;
+    const isCanvas = cls.id >= CANVAS_CLASS_ID_OFFSET;
 
     return (
         <tr
             onClick={onClick}
-            className="hover:bg-[#E2E7EA]/50 cursor-pointer transition-colors"
+            className={cn(
+                'transition-colors',
+                onClick ? 'hover:bg-[#E2E7EA]/50 cursor-pointer' : 'cursor-default'
+            )}
         >
             <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
@@ -732,7 +742,15 @@ function ClassRow({
                 </Badge>
             </td>
             <td className="px-6 py-4">
-                {cls.status === SelectedClassStatus.Active && (
+                {isCanvas && (
+                    <Badge variant="outline" className="text-blue-700 border-blue-300 bg-blue-50 gap-1 whitespace-nowrap">
+                        <RefreshCw className="size-3" />
+                        Canvas
+                    </Badge>
+                )}
+            </td>
+            <td className="px-6 py-4">
+                {!isCanvas && cls.status === SelectedClassStatus.Active && (
                     <Button
                         size="sm"
                         variant="outline"
