@@ -126,18 +126,9 @@ export const initialTourState: TourState = {
             disableScrolling: true
         },
         {
-            target: '#top-content',
-            content:
-                'Your top content shows the libraries and videos you visit the most.',
-            disableBeacon: true,
-            disableOverlayClose: true,
-            placement: 'top',
-            showProgress: true
-        },
-        {
             target: '#popular-content',
             content:
-                'Find new content to explore based on what others in your facility are using!',
+                'Pick up where you left off — continue learning from your recent Knowledge Center activity.',
             disableBeacon: true,
             disableOverlayClose: true,
             placement: 'top',

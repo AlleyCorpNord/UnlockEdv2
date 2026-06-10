@@ -14,7 +14,14 @@ export default defineConfig({
     server: {
         host: '0.0.0.0',
         port: 5173,
-        allowedHosts: ['frontend', 'localhost', '127.0.0.1', 'host.docker.internal']
+        allowedHosts: ['frontend', 'localhost', '127.0.0.1', 'host.docker.internal'],
+        proxy: {
+            '/api': 'http://127.0.0.1:8080',
+            '/self-service': 'http://127.0.0.1:4433',
+            '/sessions': 'http://127.0.0.1:4433',
+            '/oauth2': 'http://127.0.0.1:4444',
+            '/userinfo': 'http://127.0.0.1:4444'
+        }
     },
     build: {
         sourcemap: true,

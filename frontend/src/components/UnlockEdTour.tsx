@@ -16,9 +16,8 @@ export const targetToStepIndexMap = {
     '#library-viewer-sub-page': 9,
     '#library-viewer-favorite': 10,
     '#navigate-homepage': 11,
-    '#top-content': 12,
-    '#popular-content': 13,
-    '#end-tour': 14
+    '#popular-content': 12,
+    '#end-tour': 13
 };
 
 export default function UnlockEdTour() {
@@ -93,7 +92,7 @@ export default function UnlockEdTour() {
                         });
                         navigate('/knowledge-center');
                         return;
-                    case '#top-content':
+                    case '#popular-content':
                         setTourState({
                             stepIndex:
                                 targetToStepIndexMap['#navigate-homepage'],
